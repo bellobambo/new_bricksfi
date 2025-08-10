@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { new_bricksfi_backend } from "declarations/new_bricksfi_backend";
+import Navbar from "../components/Navbar";
 
 const containerStyle = {
   minHeight: "100vh",
@@ -8,7 +9,6 @@ const containerStyle = {
   padding: "24px",
   color: "#fff",
   fontFamily: "Arial, sans-serif",
-  maxWidth: "800px",
   margin: "0 auto",
 };
 
@@ -31,6 +31,8 @@ const detailBlockStyle = {
 export default function PropertyDetails() {
   const { id } = useParams();
   const [property, setProperty] = useState(null);
+  const [contentWidth, setContentWidth] = useState("100%");
+  const imageRef = useRef(null);
 
   useEffect(() => {
     new_bricksfi_backend.getProperty(Number(id)).then((res) => {
@@ -43,20 +45,27 @@ export default function PropertyDetails() {
     });
   }, [id]);
 
+  useEffect(() => {
+    const updateWidth = () => {
+      if (imageRef.current) {
+        setContentWidth(`${imageRef.current.clientWidth}px`);
+      }
+    };
+
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+
+    return () => window.removeEventListener("resize", updateWidth);
+  }, [property]); // Re-run when property loads (image will be available)
+
   if (!property) {
     return <p style={{ color: "#fff", padding: "20px" }}>Loading...</p>;
   }
 
   return (
     <>
-      <div
-        style={{
-          position: "fixed",
-          top: 16,
-          left: 16,
-          zIndex: 1000,
-        }}
-      >
+      <Navbar />
+      <div style={{ margin: "0 auto" }}>
         <Link
           to="/"
           style={{
@@ -73,97 +82,96 @@ export default function PropertyDetails() {
           ← Back to Properties
         </Link>
       </div>
-
-      <div style={containerStyle}>
+      <div>
+        {/* Full-width image */}
         {property.imageUrls && property.imageUrls.length > 0 ? (
           <img
+            ref={imageRef}
             src={property.imageUrls[0]}
             alt={`${property.name} main`}
             style={{
-              width: "100%",
-              objectFit: "contain", // so full image visible without cropping
+              width: "100vw",
+              height: "400px",
+              objectFit: "cover",
               display: "block",
-              borderRadius: "12px",
-              marginBottom: "24px",
             }}
             onError={(e) => (e.target.style.display = "none")}
           />
         ) : (
           <div
+            ref={imageRef}
             style={{
-              width: "100%",
+              width: "100vw",
               height: "320px",
               backgroundColor: "#333",
-              borderRadius: "12px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               color: "#999",
-              marginBottom: "24px",
             }}
           >
             No Image
           </div>
         )}
 
-        {/* Property Name */}
-        <h2
-          style={{
-            fontSize: "28px",
-            fontWeight: "bold",
-            marginBottom: "24px",
-            color: "#fff",
-            textAlign: "center",
-          }}
-        >
-          {property.name}
-        </h2>
+        {/* Rest of the property details */}
+        <div style={{ ...containerStyle, maxWidth: contentWidth }}>
+          <h2
+            style={{
+              fontSize: "28px",
+              fontWeight: "bold",
+              marginBottom: "24px",
+              color: "#fff",
+              textAlign: "center",
+            }}
+          >
+            {property.name}
+          </h2>
 
-        {/* Details grid 2 per row */}
-        <div style={detailsGridStyle}>
-          <div style={detailBlockStyle}>{Number(property.bedrooms)} Beds</div>
-          <div style={detailBlockStyle}>{Number(property.bathrooms)} Baths</div>
-          <div style={detailBlockStyle}>{Number(property.squareMeters)} m²</div>
-          <div style={detailBlockStyle}>
-            {" "}
-            {/* Empty block or you can add something here */}{" "}
+          <div style={detailsGridStyle}>
+            <div style={detailBlockStyle}>{Number(property.bedrooms)} Beds</div>
+            <div style={detailBlockStyle}>
+              {Number(property.bathrooms)} Baths
+            </div>
+            <div style={detailBlockStyle}>
+              {Number(property.squareMeters)} m²
+            </div>
+            <div style={detailBlockStyle}></div>
           </div>
+
+          <p
+            style={{
+              backgroundColor: "#222",
+              padding: "16px",
+              borderRadius: "12px",
+              color: "#bbb",
+              fontWeight: "500",
+              fontSize: "16px",
+              marginBottom: "24px",
+              lineHeight: "1.5",
+            }}
+          >
+            {property.description}
+          </p>
+
+          <button
+            onClick={() => alert(`Buying token for property ${property.name}`)}
+            style={{
+              display: "block",
+              backgroundColor: "#5D3FD3",
+              color: "white",
+              padding: "14px 0",
+              borderRadius: "8px",
+              fontWeight: "600",
+              width: "100%",
+              border: "none",
+              cursor: "pointer",
+              fontSize: "16px",
+            }}
+          >
+            Buy Token
+          </button>
         </div>
-
-        {/* Description full width below */}
-        <p
-          style={{
-            backgroundColor: "#222",
-            padding: "16px",
-            borderRadius: "12px",
-            color: "#bbb",
-            fontWeight: "500",
-            fontSize: "16px",
-            marginBottom: "24px",
-            lineHeight: "1.5",
-          }}
-        >
-          {property.description}
-        </p>
-
-        {/* Buy Token Button */}
-        <button
-          onClick={() => alert(`Buying token for property ${property.name}`)}
-          style={{
-            display: "block",
-            backgroundColor: "#5D3FD3",
-            color: "white",
-            padding: "14px 0",
-            borderRadius: "8px",
-            fontWeight: "600",
-            width: "100%",
-            border: "none",
-            cursor: "pointer",
-            fontSize: "16px",
-          }}
-        >
-          Buy Token
-        </button>
       </div>
     </>
   );

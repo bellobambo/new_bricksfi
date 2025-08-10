@@ -1,17 +1,30 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 const Navbar = () => {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div
       style={{
         padding: "20px",
+        fontFamily: "Albert Sans",
         display: "flex",
         justifyContent: "space-between",
-        color: "white",
         alignItems: "center",
-        backgroundColor: "#111", // optional for navbar background
+        backgroundColor: "#111",
+        color: "white",
+        position: "relative",
       }}
     >
+      {/* Logo */}
       <span
         style={{
           display: "flex",
@@ -25,34 +38,85 @@ const Navbar = () => {
         <span>BricksFi</span>
       </span>
 
-      <span
-        style={{
-          display: "flex",
-          gap: "20px",
-          fontSize: "16px",
-        }}
-      >
-        <span>Home</span>
-        <span>Properties</span>
-        <span>Dashboard</span>
-      </span>
+      {/* Desktop Links */}
+      {!isMobile && (
+        <span style={{ display: "flex", gap: "20px", fontSize: "16px" }}>
+          <a style={linkStyle} href="/">
+            Home
+          </a>
+          <a style={linkStyle} href="/properties">
+            Properties
+          </a>
+        </span>
+      )}
 
-      <span
-        style={{
-          backgroundColor: "#5D3FD3",
-          padding: "12px",
-          borderRadius: "10px",
-          fontSize: "14px",
-          cursor: "pointer",
-        }}
-      >
-        Connect ICP
-      </span>
+      {/* Desktop Button */}
+      {!isMobile && <span style={connectBtnStyle}>Connect ICP</span>}
+
+      {/* Mobile Menu Toggle */}
+      {isMobile && (
+        <div
+          style={{ cursor: "pointer" }}
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          <div style={barStyle}></div>
+          <div style={barStyle}></div>
+          <div style={barStyle}></div>
+        </div>
+      )}
+
+      {/* Mobile Dropdown */}
+      {isMobile && menuOpen && (
+        <div
+          style={{
+            position: "absolute",
+            top: "60px",
+            right: "20px",
+            backgroundColor: "#222",
+            padding: "15px",
+            borderRadius: "10px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "15px",
+            zIndex: 10,
+          }}
+        >
+          <a style={linkStyle} href="/">
+            Home
+          </a>
+          <a style={linkStyle} href="/properties">
+            Properties
+          </a>
+          <span style={connectBtnStyle}>Connect ICP</span>
+        </div>
+      )}
     </div>
   );
 };
 
 export default Navbar;
+
+// Styles
+const linkStyle = {
+  color: "white",
+  textDecoration: "none",
+};
+
+const connectBtnStyle = {
+  backgroundColor: "#5D3FD3",
+  padding: "12px",
+  borderRadius: "10px",
+  fontSize: "14px",
+  cursor: "pointer",
+  textAlign: "center",
+};
+
+const barStyle = {
+  width: "25px",
+  height: "3px",
+  backgroundColor: "white",
+  margin: "4px 0",
+};
 
 function Icon() {
   return (
