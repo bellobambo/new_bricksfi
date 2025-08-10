@@ -1,0 +1,26 @@
+{
+  "canisters": {
+    "new_bricksfi_backend": {
+      "main": "src/new_bricksfi_backend/main.mo",
+      "type": "motoko"
+    },
+    "new_bricksfi_frontend": {
+      "dependencies": [
+        "new_bricksfi_backend"
+      ],
+      "source": [
+        "src/new_bricksfi_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "new_bricksfi_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
