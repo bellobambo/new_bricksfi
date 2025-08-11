@@ -7,6 +7,8 @@ function App() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [icpPrice, setIcpPrice] = useState(null);
+  const [priceLoading, setPriceLoading] = useState(true);
 
   useEffect(() => {
     async function fetchProperties() {
@@ -21,6 +23,27 @@ function App() {
       }
     }
     fetchProperties();
+  }, []);
+
+  useEffect(() => {
+    async function fetchIcpPrice() {
+      try {
+        // Using CoinGecko API
+        const response = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=internet-computer&vs_currencies=usd"
+        );
+        const data = await response.json();
+        console.log("ICP PRICE", data);
+        setIcpPrice(data["internet-computer"].usd);
+      } catch (err) {
+        console.error("Failed to fetch ICP price:", err);
+
+        setIcpPrice(10); // You can set a default value here
+      } finally {
+        setPriceLoading(false);
+      }
+    }
+    fetchIcpPrice();
   }, []);
 
   const containerStyle = {
@@ -172,7 +195,7 @@ function App() {
                               fontSize: "14px",
                             }}
                           >
-                            {(Number(property.totalPrice) / 210).toFixed(0)} ICP
+                            $ {icpPrice}
                           </span>
                           <span>
                             {" "}

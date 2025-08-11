@@ -37,18 +37,41 @@ const detailBlockStyle = {
 export default function PropertyDetails() {
   const { id } = useParams();
   const [property, setProperty] = useState(null);
+  const [investors, setInvestors] = useState([]);
+  const [fundingPercentage, setFundingPercentage] = useState(0);
+  const [uniqueInvestorsCount, setUniqueInvestorsCount] = useState(0);
   const [contentWidth, setContentWidth] = useState("100%");
+  const [icpPrice, setIcpPrice] = useState(null);
+  const [priceLoading, setPriceLoading] = useState(true);
   const imageRef = useRef(null);
 
   useEffect(() => {
-    new_bricksfi_backend.getProperty(Number(id)).then((res) => {
-      console.log("Fetched property:", res);
-      if (res && res.length > 0) {
-        setProperty(res[0]);
-      } else {
-        setProperty(null);
+    async function fetchPropertyData() {
+      try {
+        // Fetch property
+        const propertyData = await new_bricksfi_backend.getProperty(Number(id));
+        if (propertyData && propertyData.length > 0) {
+          setProperty(propertyData[0]);
+
+          // Calculate funding percentage
+          const funded = Number(propertyData[0].fundedAmount);
+          const total = Number(propertyData[0].totalPrice);
+          const percentage =
+            total > 0 ? Math.min(100, (funded / total) * 100) : 0;
+          setFundingPercentage(percentage.toFixed(0));
+
+          // Fetch investment details
+          const investmentDetails =
+            await new_bricksfi_backend.getPropertyInvestmentDetails(Number(id));
+          setInvestors(investmentDetails.investments);
+          setUniqueInvestorsCount(investmentDetails.uniqueInvestors);
+        }
+      } catch (error) {
+        console.error("Error fetching property data:", error);
       }
-    });
+    }
+
+    fetchPropertyData();
   }, [id]);
 
   useEffect(() => {
@@ -63,6 +86,26 @@ export default function PropertyDetails() {
 
     return () => window.removeEventListener("resize", updateWidth);
   }, [property]); // Re-run when property loads (image will be available)
+
+  useEffect(() => {
+    async function fetchIcpPrice() {
+      try {
+        const response = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=internet-computer&vs_currencies=usd"
+        );
+        const data = await response.json();
+        console.log("ICP PRICE", data);
+        setIcpPrice(data["internet-computer"].usd);
+      } catch (err) {
+        console.error("Failed to fetch ICP price:", err);
+
+        setIcpPrice(10); // You can set a default value here
+      } finally {
+        setPriceLoading(false);
+      }
+    }
+    fetchIcpPrice();
+  }, []);
 
   if (!property) {
     return <p style={{ color: "#fff", padding: "20px" }}>Loading...</p>;
@@ -302,8 +345,11 @@ export default function PropertyDetails() {
                   <span style={{ fontSize: "14px" }}>
                     {Number(property.totalPrice)} ICP
                   </span>
-                  <span style={{ fontSize: "12px", marginTop: "5px" }}>
-                    = $4000
+                  <span style={{ fontSize: "16px", marginTop: "5px" }}>
+                    $
+                    {icpPrice
+                      ? (Number(property.totalPrice) * icpPrice).toFixed(2)
+                      : "Loading..."}
                   </span>
                 </span>
               </div>
@@ -342,12 +388,9 @@ export default function PropertyDetails() {
                   >
                     Price Per Token
                   </small>
-                  <span style={{ fontSize: "14px" }}>
-                    {/* {Number(property.totalPrice)} ICP */}
-                    10 ICP
-                  </span>
-                  <span style={{ fontSize: "12px", marginTop: "5px" }}>
-                    = $50.00
+
+                  <span style={{ fontSize: "16px", marginTop: "5px" }}>
+                    $ {icpPrice}
                   </span>
                 </span>
               </div>
@@ -390,12 +433,11 @@ export default function PropertyDetails() {
                 >
                   <span style={{ fontSize: "14px" }}>No of Investors</span>
                   <span style={{ fontSize: "18px", marginTop: "4px" }}>
-                    {/* {Number(property.bedrooms)} */}2
+                    {uniqueInvestorsCount}
                   </span>
                 </span>
               </div>
 
-              {/* Bathrooms block */}
               <div
                 style={{
                   backgroundColor: "#181818",
@@ -423,7 +465,7 @@ export default function PropertyDetails() {
                 >
                   <span style={{ fontSize: "14px" }}>Funding</span>
                   <span style={{ fontSize: "18px", marginTop: "4px" }}>
-                    {/* {Number(property.bathrooms)} */} 0%
+                    {fundingPercentage}%
                   </span>
                 </span>
               </div>
