@@ -34,6 +34,7 @@ function App() {
   const cardStyle = {
     backgroundColor: "#111",
     borderRadius: "12px",
+    maxWidth: "360px",
     // padding: "16px",
     boxShadow: "0 2px 6px rgba(0,0,0,0.5)",
     marginBottom: "20px",
@@ -116,34 +117,102 @@ function App() {
                     </div>
                   )}
 
-                  {/* Details below the image */}
-                  <div style={{ padding: "16px" }}>
+                  {/* Description */}
+                  <div
+                    style={{
+                      padding: "16px",
+                      alignItems: "left",
+                      textAlign: "left",
+                    }}
+                  >
+                    {/* Property name centered */}
                     <h2
                       style={{
                         fontSize: "18px",
                         fontWeight: "600",
-                        marginBottom: "6px",
+                        marginBottom: "16px",
                         color: "#FFFFFF",
                       }}
                     >
                       {property.name}
                     </h2>
 
+                    {/* Details 2 per row, left aligned */}
                     <div
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
+                        display: "grid",
+                        gap: "0.5px",
                         fontSize: "14px",
-                        color: "#999",
-                        marginBottom: "10px",
+                        color: "#ccc",
+                        marginBottom: "12px",
                       }}
                     >
-                      <span>{Number(property.bedrooms)} Beds</span>
-                      <span>{Number(property.bathrooms)} Baths</span>
-                      <span>{Number(property.squareMeters)} m²</span>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#5D3FD3",
+                            fontWeight: "700",
+                            fontSize: "18px",
+                          }}
+                        >
+                          {Number(property.totalPrice).toLocaleString()} ICP
+                        </div>{" "}
+                        |
+                        <div>
+                          <span
+                            style={{
+                              color: "#5D3FD3",
+                              fontWeight: "600",
+                              fontSize: "14px",
+                            }}
+                          >
+                            {(Number(property.totalPrice) / 210).toFixed(0)} ICP
+                          </span>
+                          <span>
+                            {" "}
+                            <span></span>per token
+                          </span>
+                        </div>
+                      </div>
+                      <br />
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <div>{property.location}</div> |<div>11 investors</div>
+                      </div>
+                      <br />
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <div>{property.yieldPercentage}% Yield</div> |
+                        <div>
+                          {Math.round(
+                            (Number(property.fundedAmount) /
+                              Number(property.totalPrice)) *
+                              100
+                          ) || 0}
+                          % Funded
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Centered button for View Details */}
+                    {/* View Details button */}
                     <Link
                       to={`/property/${property.id}`}
                       style={{
