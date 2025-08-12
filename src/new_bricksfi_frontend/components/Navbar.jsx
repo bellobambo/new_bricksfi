@@ -1,69 +1,99 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isAuthenticated, principal, login, logout } = useAuth();
 
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const truncatedPrincipal = principal
+    ? `${principal.slice(0, 5)}...${principal.slice(-3)}`
+    : null;
+
   return (
     <div
       style={{
         padding: "20px",
         fontFamily: "Albert Sans",
+        fontSize: "16px",
+        fontWeight: "500",
         display: "flex",
-        justifyContent: "space-between",
         alignItems: "center",
         backgroundColor: "#111",
         color: "white",
         position: "relative",
       }}
     >
-      {/* Logo */}
-      <span
-        style={{
-          display: "flex",
-          alignItems: "center",
-          fontSize: "24px",
-          fontWeight: "500",
-          gap: "10px",
-        }}
-      >
+      {/* Left: Logo */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
         <Icon />
-        <span>BricksFi</span>
-      </span>
+        <span
+          style={{ marginLeft: "10px", fontSize: "24px", fontWeight: "500" }}
+        >
+          BricksFi
+        </span>
+      </div>
 
-      {/* Desktop Links */}
+      {/* Middle: Links (Desktop Only) */}
       {!isMobile && (
-        <span style={{ display: "flex", gap: "20px", fontSize: "16px" }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            justifyContent: "center",
+            gap: "20px",
+            fontSize: "16px",
+          }}
+        >
           <a style={linkStyle} href="/">
             Home
           </a>
           <a style={linkStyle} href="/properties">
             Properties
           </a>
-        </span>
-      )}
-
-      {/* Desktop Button */}
-      {!isMobile && <span style={connectBtnStyle}>Connect ICP</span>}
-
-      {/* Mobile Menu Toggle */}
-      {isMobile && (
-        <div
-          style={{ cursor: "pointer" }}
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          <div style={barStyle}></div>
-          <div style={barStyle}></div>
-          <div style={barStyle}></div>
         </div>
       )}
+
+      {/* Right: Connect / Logout OR Mobile Menu */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          gap: "15px",
+        }}
+      >
+        {!isMobile ? (
+          isAuthenticated ? (
+            <>
+              <span style={{ color: "#5D3FD3" }}>{truncatedPrincipal}</span>
+              <span style={connectBtnStyle} onClick={logout}>
+                Logout
+              </span>
+            </>
+          ) : (
+            <span style={connectBtnStyle} onClick={login}>
+              Connect ICP
+            </span>
+          )
+        ) : (
+          <div
+            style={{ cursor: "pointer" }}
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            <div style={barStyle}></div>
+            <div style={barStyle}></div>
+            <div style={barStyle}></div>
+          </div>
+        )}
+      </div>
 
       {/* Mobile Dropdown */}
       {isMobile && menuOpen && (
@@ -87,7 +117,20 @@ const Navbar = () => {
           <a style={linkStyle} href="/properties">
             Properties
           </a>
-          <span style={connectBtnStyle}>Connect ICP</span>
+          {isAuthenticated ? (
+            <>
+              <span style={{ color: "white", textAlign: "center" }}>
+                {truncatedPrincipal}
+              </span>
+              <span style={connectBtnStyle} onClick={logout}>
+                Logout
+              </span>
+            </>
+          ) : (
+            <span style={connectBtnStyle} onClick={login}>
+              Connect ICP
+            </span>
+          )}
         </div>
       )}
     </div>

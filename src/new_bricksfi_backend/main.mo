@@ -3,9 +3,11 @@ import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Time "mo:base/Time";
 import Float "mo:base/Float";
+import Principal "mo:base/Principal";
+import Result "mo:base/Result";
 
-persistent actor BricksFi {
-  // Define the Property type
+persistent actor class BricksFi(owner : Principal) = this {
+  // Types ---------------------------------------------------------------------
   public type Property = {
     id : Nat;
     name : Text;
@@ -15,29 +17,47 @@ persistent actor BricksFi {
     squareMeters : Nat;
     imageUrls : [Text];
     location : Text;
-    totalPrice : Nat; // Total price of the property
-    yieldPercentage : Float; // Expected annual yield percentage
-    fundedAmount : Nat; // Total amount funded so far
-    fundingComplete : Bool; // Whether funding is complete
+    totalPrice : Nat;
+    yieldPercentage : Float;
+    fundedAmount : Nat;
+    fundingComplete : Bool;
     createdAt : Int;
+    creator : Principal; // Track who created the property
   };
 
   public type Investment = {
+    id : Nat;
     propertyId : Nat;
     amount : Nat;
     investor : Principal;
     timestamp : Int;
   };
 
-  // Counter for generating unique IDs
-  private transient var nextId : Nat = 1;
+  public type Error = {
+    #NotFound;
+    #Unauthorized;
+    #AlreadyFunded;
+    #InvalidAmount;
+    #AnonymousNotAllowed;
+  };
 
-  // Storage for properties and investments
-  private transient var properties : [Property] = [];
-  private transient var investments : [Investment] = [];
+  // State ---------------------------------------------------------------------
+  private stable var nextPropertyId : Nat = 1;
+  private stable var nextInvestmentId : Nat = 1;
+  private stable var properties : [Property] = [];
+  private stable var investments : [Investment] = [];
 
-  // Function to create a new property
-  public func createProperty(
+  // Auth Helpers --------------------------------------------------------------
+  private func isOwner(caller : Principal) : Bool {
+    caller == owner;
+  };
+
+  private func isAnonymous(caller : Principal) : Bool {
+    Principal.isAnonymous(caller);
+  };
+
+  // Property Management -------------------------------------------------------
+  public shared (msg) func createProperty(
     name : Text,
     description : Text,
     bedrooms : Nat,
@@ -47,9 +67,10 @@ persistent actor BricksFi {
     location : Text,
     totalPrice : Nat,
     yieldPercentage : Float,
-  ) : async Nat {
+  ) : async Result.Result<Nat, Error> {
+
     let newProperty : Property = {
-      id = nextId;
+      id = nextPropertyId;
       name;
       description;
       bedrooms;
@@ -62,48 +83,89 @@ persistent actor BricksFi {
       fundedAmount = 0;
       fundingComplete = false;
       createdAt = Time.now();
+      creator = msg.caller;
     };
 
     properties := Array.append(properties, [newProperty]);
-    nextId += 1;
+    nextPropertyId += 1;
 
-    return newProperty.id;
+    #ok(newProperty.id);
   };
 
-  // Function to invest in a property
-  public shared (msg) func investInProperty(propertyId : Nat, amount : Nat) : async Bool {
-    // Find the property
-    switch (Array.find(properties, func(p : Property) : Bool { p.id == propertyId })) {
-      case null { return false }; // Property not found
+  public shared (msg) func updateProperty(
+    id : Nat,
+    name : Text,
+    description : Text,
+    imageUrls : [Text],
+  ) : async Result.Result<(), Error> {
+    switch (Array.find(properties, func(p : Property) : Bool { p.id == id })) {
+      case null { return #err(#NotFound) };
       case (?property) {
-        if (property.fundingComplete) {
-          return false; // Funding already complete
+        // Only owner or creator can update
+        if (msg.caller != property.creator and not isOwner(msg.caller)) {
+          return #err(#Unauthorized);
         };
 
-        // Calculate new funded amount
-        let newFundedAmount = property.fundedAmount + amount;
-        let fundingComplete = newFundedAmount >= property.totalPrice;
-
-        // Update the property
         let updatedProperties = Array.map<Property, Property>(
           properties,
           func(p) {
+            if (p.id == id) {
+              {
+                p with
+                name = name;
+                description = description;
+                imageUrls = imageUrls;
+              };
+            } else { p };
+          },
+        );
+
+        properties := updatedProperties;
+        #ok(());
+      };
+    };
+  };
+
+  // Investment Functions ------------------------------------------------------
+  public shared (msg) func investInProperty(
+    propertyId : Nat,
+    amount : Nat,
+  ) : async Result.Result<Nat, Error> {
+    if (isAnonymous(msg.caller)) {
+      return #err(#AnonymousNotAllowed);
+    };
+
+    if (amount == 0) {
+      return #err(#InvalidAmount);
+    };
+
+    switch (Array.find(properties, func(p : Property) : Bool { p.id == propertyId })) {
+      case null { #err(#NotFound) };
+      case (?property) {
+        if (property.fundingComplete) {
+          return #err(#AlreadyFunded);
+        };
+
+        let newFundedAmount = property.fundedAmount + amount;
+        let fundingComplete = newFundedAmount >= property.totalPrice;
+
+        // Update property
+        properties := Array.map(
+          properties,
+          func(p : Property) : Property {
             if (p.id == propertyId) {
               {
                 p with
                 fundedAmount = newFundedAmount;
                 fundingComplete = fundingComplete;
               };
-            } else {
-              p;
-            };
+            } else { p };
           },
         );
 
-        properties := updatedProperties;
-
-        // Record the investment
+        // Record investment
         let newInvestment : Investment = {
+          id = nextInvestmentId;
           propertyId;
           amount;
           investor = msg.caller;
@@ -111,43 +173,74 @@ persistent actor BricksFi {
         };
 
         investments := Array.append(investments, [newInvestment]);
+        nextInvestmentId += 1;
 
-        return true;
+        #ok(newInvestment.id);
       };
     };
   };
 
-  // Function to get the funding percentage for a property
+  // Query Functions -----------------------------------------------------------
+  public query func whoami() : async Principal {
+    // Useful for frontend to verify authentication
+    Principal.fromActor(this);
+  };
+
+  public query func getPrincipal() : async Principal {
+    // Returns caller's principal
+    Principal.fromActor(this);
+  };
+
   public query func getFundingPercentage(propertyId : Nat) : async ?Float {
     switch (Array.find(properties, func(p : Property) : Bool { p.id == propertyId })) {
       case null { null };
       case (?property) {
-        if (property.totalPrice == 0) {
-          ?0.0;
-        } else {
+        if (property.totalPrice == 0) { ?0.0 } else {
           ?(Float.fromInt(property.fundedAmount) / Float.fromInt(property.totalPrice) * 100.0);
         };
       };
     };
   };
 
-  // Function to get a property by ID
   public query func getProperty(id : Nat) : async ?Property {
     Array.find(properties, func(p : Property) : Bool { p.id == id });
   };
 
-  // Function to get all properties
   public query func getAllProperties() : async [Property] {
     properties;
   };
 
-  // Function to get the total number of properties
   public query func getPropertyCount() : async Nat {
     properties.size();
   };
 
-  // Function to get investments for a property
   public query func getPropertyInvestments(propertyId : Nat) : async [Investment] {
     Array.filter(investments, func(i : Investment) : Bool { i.propertyId == propertyId });
+  };
+
+  public shared query (msg) func getMyInvestments() : async [Investment] {
+    Array.filter(investments, func(i : Investment) : Bool { i.investor == msg.caller });
+  };
+
+  public shared query (msg) func getCreatedProperties() : async [Property] {
+    Array.filter(properties, func(p : Property) : Bool { p.creator == msg.caller });
+  };
+
+  // Admin Functions -----------------------------------------------------------
+  public shared (msg) func deleteProperty(id : Nat) : async Result.Result<(), Error> {
+    if (not isOwner(msg.caller)) {
+      return #err(#Unauthorized);
+    };
+
+    properties := Array.filter(properties, func(p : Property) : Bool { p.id != id });
+    #ok(());
+  };
+
+  system func preupgrade() {
+    // Can add persistent storage handling here if needed
+  };
+
+  system func postupgrade() {
+    // Post-upgrade hooks
   };
 };

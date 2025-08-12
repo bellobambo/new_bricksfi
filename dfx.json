@@ -2,17 +2,24 @@
   "canisters": {
     "new_bricksfi_backend": {
       "main": "src/new_bricksfi_backend/main.mo",
-      "type": "motoko"
+      "type": "motoko",
+      "args": "--enhanced-orthogonal-persistence"
     },
     "new_bricksfi_frontend": {
-      "dependencies": [
-        "new_bricksfi_backend"
-      ],
-      "source": [
-        "src/new_bricksfi_frontend/dist"
-      ],
+      "dependencies": ["new_bricksfi_backend"],
+      "source": ["src/new_bricksfi_frontend/dist"],
       "type": "assets",
       "workspace": "new_bricksfi_frontend"
+    },
+    "internet_identity": {
+      "type": "custom",
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "remote": {
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      },
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
     }
   },
   "defaults": {

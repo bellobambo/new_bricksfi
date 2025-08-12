@@ -6,7 +6,6 @@ const Home = () => {
   return (
     <>
       <Navbar />
-
       <div
         style={{
           display: "flex ",
