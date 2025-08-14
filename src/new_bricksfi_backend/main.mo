@@ -1,12 +1,18 @@
 import Array "mo:base/Array";
 import Nat "mo:base/Nat";
+import Nat64 "mo:base/Nat64";
+import Nat8 "mo:base/Nat8";
 import Text "mo:base/Text";
 import Time "mo:base/Time";
 import Float "mo:base/Float";
 import Principal "mo:base/Principal";
 import Result "mo:base/Result";
+import Error "mo:base/Error";
+import Blob "mo:base/Blob";
+import Ledger "canister:icp_ledger_canister";
+import Debug "mo:base/Debug";
 
-persistent actor class BricksFi(owner : Principal) = this {
+actor class BricksFi(owner : Principal) = this {
   // Types ---------------------------------------------------------------------
   public type Property = {
     id : Nat;
@@ -17,18 +23,18 @@ persistent actor class BricksFi(owner : Principal) = this {
     squareMeters : Nat;
     imageUrls : [Text];
     location : Text;
-    totalPrice : Nat;
+    totalPrice : Nat; // in e8s (100_000_000 e8s = 1 ICP)
     yieldPercentage : Float;
-    fundedAmount : Nat;
+    fundedAmount : Nat; // in e8s
     fundingComplete : Bool;
     createdAt : Int;
-    creator : Principal; // Track who created the property
+    creator : Principal;
   };
 
   public type Investment = {
     id : Nat;
     propertyId : Nat;
-    amount : Nat;
+    amount : Nat; // in e8s
     investor : Principal;
     timestamp : Int;
   };
@@ -38,8 +44,12 @@ persistent actor class BricksFi(owner : Principal) = this {
     #Unauthorized;
     #AlreadyFunded;
     #InvalidAmount;
-    #AnonymousNotAllowed;
+    #TransferFailed : Text;
   };
+
+  // Constants -----------------------------------------------------------------
+  let FEE : Nat = 10_000; // Standard ICP ledger fee (0.0001 ICP)
+  let ICP_LEDGER_CANISTER_ID = Principal.fromText("ryjl3-tyaaa-aaaaa-aaaba-cai");
 
   // State ---------------------------------------------------------------------
   private stable var nextPropertyId : Nat = 1;
@@ -50,10 +60,6 @@ persistent actor class BricksFi(owner : Principal) = this {
   // Auth Helpers --------------------------------------------------------------
   private func isOwner(caller : Principal) : Bool {
     caller == owner;
-  };
-
-  private func isAnonymous(caller : Principal) : Bool {
-    Principal.isAnonymous(caller);
   };
 
   // Property Management -------------------------------------------------------
@@ -101,7 +107,7 @@ persistent actor class BricksFi(owner : Principal) = this {
     switch (Array.find(properties, func(p : Property) : Bool { p.id == id })) {
       case null { return #err(#NotFound) };
       case (?property) {
-        // Only owner or creator can update
+        // Allow updates by creator or owner
         if (msg.caller != property.creator and not isOwner(msg.caller)) {
           return #err(#Unauthorized);
         };
@@ -131,11 +137,7 @@ persistent actor class BricksFi(owner : Principal) = this {
     propertyId : Nat,
     amount : Nat,
   ) : async Result.Result<Nat, Error> {
-    if (isAnonymous(msg.caller)) {
-      return #err(#AnonymousNotAllowed);
-    };
-
-    if (amount == 0) {
+    if (amount <= FEE) {
       return #err(#InvalidAmount);
     };
 
@@ -146,7 +148,19 @@ persistent actor class BricksFi(owner : Principal) = this {
           return #err(#AlreadyFunded);
         };
 
-        let newFundedAmount = property.fundedAmount + amount;
+        // Safe subtraction to avoid trapping
+        let amountAfterFee = if (amount > FEE) { amount - FEE } else {
+          return #err(#InvalidAmount);
+        }; // Shouldn't happen due to earlier check
+
+        // Transfer ICP from investor to canister
+        let transferResult = await transferICP(msg.caller, Principal.fromActor(this), amount);
+        switch (transferResult) {
+          case (#err(e)) { return #err(#TransferFailed(e)) };
+          case _ {};
+        };
+
+        let newFundedAmount = property.fundedAmount + amountAfterFee;
         let fundingComplete = newFundedAmount >= property.totalPrice;
 
         // Update property
@@ -167,7 +181,7 @@ persistent actor class BricksFi(owner : Principal) = this {
         let newInvestment : Investment = {
           id = nextInvestmentId;
           propertyId;
-          amount;
+          amount = amountAfterFee;
           investor = msg.caller;
           timestamp = Time.now();
         };
@@ -180,14 +194,58 @@ persistent actor class BricksFi(owner : Principal) = this {
     };
   };
 
+  // ICP Transfer Functions ----------------------------------------------------
+  private func transferICP(
+    from : Principal,
+    to : Principal,
+    amount : Nat,
+  ) : async Result.Result<Nat, Text> {
+    try {
+      let transferArgs : Ledger.TransferArgs = {
+        memo = 0 : Nat64;
+        amount = { e8s = Nat64.fromNat(amount) };
+        fee = { e8s = Nat64.fromNat(FEE) };
+        from_subaccount = null;
+        to = principalToAccount(to);
+        created_at_time = null;
+      };
+
+      let transferResult = await Ledger.transfer(transferArgs);
+      switch (transferResult) {
+        case (#Ok(blockIndex)) { #ok(Nat64.toNat(blockIndex)) };
+        case (#Err(transferError)) {
+          #err("Transfer error: " # debug_show (transferError));
+        };
+      };
+    } catch (e) {
+      #err("Caught exception: " # Error.message(e));
+    };
+  };
+
+  // Simplified principal to account identifier conversion
+  private func principalToAccount(principal : Principal) : Ledger.AccountIdentifier {
+    let account = Blob.toArray(Principal.toBlob(principal));
+    let size = account.size();
+    var sum = 0;
+
+    for (i in account.keys()) {
+      sum += Nat8.toNat(account[i]); // Convert Nat8 to Nat for safe addition
+    };
+
+    let crc = sum % 65536; // Simple checksum (for demo purposes)
+    let crcBytes = [
+      Nat8.fromNat(crc / 256),
+      Nat8.fromNat(crc % 256),
+    ];
+    Blob.fromArray(Array.append(crcBytes, account));
+  };
+
   // Query Functions -----------------------------------------------------------
-  public query func whoami() : async Principal {
-    // Useful for frontend to verify authentication
-    Principal.fromActor(this);
+  public query func getCanisterAccount() : async Blob {
+    principalToAccount(Principal.fromActor(this));
   };
 
   public query func getPrincipal() : async Principal {
-    // Returns caller's principal
     Principal.fromActor(this);
   };
 
@@ -236,11 +294,18 @@ persistent actor class BricksFi(owner : Principal) = this {
     #ok(());
   };
 
-  system func preupgrade() {
-    // Can add persistent storage handling here if needed
-  };
+  public shared (msg) func withdrawFunds(
+    amount : Nat,
+    to : Principal,
+  ) : async Result.Result<Nat, Error> {
+    if (not isOwner(msg.caller)) {
+      return #err(#Unauthorized);
+    };
 
-  system func postupgrade() {
-    // Post-upgrade hooks
+    let transferResult = await transferICP(Principal.fromActor(this), to, amount);
+    switch (transferResult) {
+      case (#ok(blockIndex)) { #ok(blockIndex) };
+      case (#err(e)) { #err(#TransferFailed(e)) };
+    };
   };
 };

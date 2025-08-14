@@ -75,3 +75,20 @@ my principal :
 dfx deploy new_bricksfi_frontend
 dfx deploy new_bricksfi_backend
 dfx deploy --argument 'internet_identity=(null)'
+
+"candid": "https://raw.githubusercontent.com/dfinity/ic/047925dfd8386aca91d154054149727131766084/rs/ledger_suite/icp/ledger.did",
+"wasm": "https://download.dfinity.systems/ic/047925dfd8386aca91d154054149727131766084/canisters/ledger-canister.wasm.gz",
+
+dfx ledger account-id
+bd29fc3ef91413dbd3fbb2f632f84d3c30e576f4d7e43ef2c49958c24afee436
+
+wallet canister id: uxrrr-q7777-77774-qaaaq-cai
+
+user@Bambo new_bricksfi % dfx ledger fabricate-cycles --canister bricksfi_backend --amount 100
+At the current exchange rate, 10000000000 e8s produces approximately 396270000000000 cycles.
+Fabricating 396270000000000 cycles onto bricksfi_backend
+Fabricated 396270000000000 cycles, updated balance: 399_267_479_554_584 cycles
+user@Bambo new_bricksfi %
+
+dfx wallet --network local balance
+dfx ledger --network local top-up <your-canister-id> --amount 100
