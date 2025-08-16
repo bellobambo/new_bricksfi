@@ -1,29 +1,34 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
-import { new_bricksfi_backend } from "declarations/new_bricksfi_backend";
+import { useAuth } from "../context/AuthContext"; // Import the auth context
 import Navbar from "../components/Navbar";
 
-function App() {
+function PropertiesList() {
+  const { actor } = useAuth(); // Get the actor from auth context
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [icpPrice, setIcpPrice] = useState(null);
+  const [icpPrice, setIcpPrice] = useState(0);
   const [priceLoading, setPriceLoading] = useState(true);
 
   useEffect(() => {
     async function fetchProperties() {
       try {
-        const fetchedProperties = await new_bricksfi_backend.getAllProperties();
+        if (!actor) {
+          throw new Error("Actor not initialized");
+        }
+        const fetchedProperties = await actor.getAllProperties();
         console.log("fetched data", fetchedProperties);
         setProperties(fetchedProperties);
       } catch (err) {
         setError(err.message);
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
     }
     fetchProperties();
-  }, []);
+  }, [actor]);
 
   useEffect(() => {
     async function fetchIcpPrice() {
@@ -267,4 +272,4 @@ function App() {
   );
 }
 
-export default App;
+export default PropertiesList;

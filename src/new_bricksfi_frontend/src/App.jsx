@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import PropertiesList from "../pages/PropertiesList";
 import PropertyDetails from "../pages/PropertyDetails";
 import Home from "../pages/Home";
+import PropertiesList from "../pages/PropertiesList";
 
 export default function App() {
   return (
