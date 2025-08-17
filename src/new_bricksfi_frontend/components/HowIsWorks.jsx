@@ -4,8 +4,8 @@ const HowIsWorks = () => {
   return (
     <div className="">
       <div className="flex flex-col items-center justify-center">
-        <h1 className="mb-10">HOW IT WORKS</h1>
-        <p>
+        <h1 className="mb-8">HOW IT WORKS</h1>
+        <p className="mb-10">
           it's time for a change... BricksFi helps anyone lay a path to
           financial freedom with fractional real estate investing
         </p>

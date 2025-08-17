@@ -5,7 +5,9 @@ import House from "../components/House";
 import FeaturedProperties from "../components/FeaturedProperties";
 import HowIsWorks from "../components/HowIsWorks";
 import CardsRender from "../components/CardsRender";
+import ROI from "../components/ROI";
 import Footer from "../components/Footer";
+import ROIbottom from "../components/ROIbottom";
 
 const Home = () => {
   return (
@@ -81,8 +83,9 @@ const Home = () => {
 
       <FeaturedProperties />
       <HowIsWorks />
-
       <CardsRender />
+      <ROI />
+      <ROIbottom/>
       <Footer />
     </>
   );
