@@ -84,12 +84,17 @@ dfx ledger --network local top-up <your-canister-id> --amount 100
 
 ---
 
-## License
+my principal :
+6yhvo-xuihb-at5pm-6r4mj-zviub-isbdm-ltiku-qwcpf-fwd2u-ldpnl-mqe
 
-MIT License – open for collaboration and contributions.
+dfx deploy new_bricksfi_frontend
+dfx deploy new_bricksfi_backend
+dfx deploy --argument 'internet_identity=(null)'
 
----
+"candid": "https://raw.githubusercontent.com/dfinity/ic/047925dfd8386aca91d154054149727131766084/rs/ledger_suite/icp/ledger.did",
+"wasm": "https://download.dfinity.systems/ic/047925dfd8386aca91d154054149727131766084/canisters/ledger-canister.wasm.gz",
 
-If you want, I can also **add a small section showing example Motoko calls** (`createProperty`, `investInProperty`, `getAllProperties`) to make it more GitHub-friendly for developers.
+dfx ledger account-id
+bd29fc3ef91413dbd3fbb2f632f84d3c30e576f4d7e43ef2c49958c24afee436
 
-Do you want me to add that?
+wallet canister id: uxrrr-q7777-77774-qaaaq-cai
