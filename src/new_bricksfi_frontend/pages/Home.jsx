@@ -15,69 +15,79 @@ const Home = () => {
       <Navbar />
       <div
         style={{
-          display: "flex ",
+          display: "flex",
           justifyContent: "space-between",
           padding: "40px",
           marginTop: "40px",
           alignItems: "center",
-
           fontFamily: "Albert Sans",
+          flexWrap: "wrap", // allow stacking
         }}
       >
         <div
           style={{
-            width: "660px",
+            flex: "1 1 400px",
+            maxWidth: "600px",
           }}
         >
           <span
             style={{
-              lineHeight: "50px",
-              letterSpacing: "0.4%",
+              lineHeight: "1.3",
               fontWeight: "600",
-              fontSize: "38px",
+              fontSize: "2.3rem", // responsive
             }}
           >
             Reinventing Africa’s Property
             <br />
             Market with Fractional
             <br />
-            Ownership on <span style={{ color: "#5D3FD3" }}> ICP</span>
+            Ownership on <span style={{ color: "#5D3FD3" }}>ICP</span>
           </span>
 
           <br />
           <span
             style={{
-              lineHeight: "32px",
-              letterSpacing: "0.2%",
+              lineHeight: "1.5",
               fontWeight: "400",
-              fontSize: "20px",
+              fontSize: "1.1rem",
               color: "#B9B9B9",
+              display: "block",
+              marginTop: "1rem",
             }}
           >
             Bricks lets you invest in tokenized real estate properties across
-            Africa through secure, on‑chain ownership powered by the Internet
+            Africa through secure, on-chain ownership powered by the Internet
             Computer Protocol (ICP).
           </span>
 
           <br />
-          <br />
           <Link
             style={{
               backgroundColor: "#5D3FD3",
-              padding: "12px",
+              padding: "12px 20px",
               borderRadius: "10px",
               fontSize: "14px",
               cursor: "pointer",
               textDecoration: "none",
               color: "white",
+              display: "inline-block",
+              marginTop: "1.5rem",
             }}
             to="/properties"
           >
             Explore Properties
           </Link>
         </div>
-        <div>
-          <House />
+
+        <div
+          style={{
+            flex: "1 1 300px", // image container shrinks on mobile
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "20px",
+          }}
+        >
+          <House style={{ maxWidth: "100%", height: "auto" }} />
         </div>
       </div>
 
@@ -85,7 +95,7 @@ const Home = () => {
       <HowIsWorks />
       <CardsRender />
       <ROI />
-      <ROIbottom/>
+      <ROIbottom />
       <Footer />
     </>
   );
