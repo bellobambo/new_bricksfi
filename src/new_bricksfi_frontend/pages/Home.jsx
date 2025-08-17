@@ -2,7 +2,10 @@ import React from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import House from "../components/House";
-import FeaturedProperties from '../components/FeaturedProperties';
+import FeaturedProperties from "../components/FeaturedProperties";
+import HowIsWorks from "../components/HowIsWorks";
+import CardsRender from "../components/CardsRender";
+import Footer from "../components/Footer";
 
 const Home = () => {
   return (
@@ -76,10 +79,13 @@ const Home = () => {
         </div>
       </div>
 
-      <FeaturedProperties/>
+      <FeaturedProperties />
+      <HowIsWorks />
+
+      <CardsRender />
+      <Footer />
     </>
   );
 };
 
 export default Home;
-
