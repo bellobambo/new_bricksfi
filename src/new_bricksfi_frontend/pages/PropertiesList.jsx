@@ -1,29 +1,34 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
-import { new_bricksfi_backend } from "declarations/new_bricksfi_backend";
+import { useAuth } from "../context/AuthContext"; // Import the auth context
 import Navbar from "../components/Navbar";
 
-function App() {
+function PropertiesList() {
+  const { actor } = useAuth(); // Get the actor from auth context
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [icpPrice, setIcpPrice] = useState(null);
+  const [icpPrice, setIcpPrice] = useState(0);
   const [priceLoading, setPriceLoading] = useState(true);
 
   useEffect(() => {
+    if (!actor) return;
+
     async function fetchProperties() {
       try {
-        const fetchedProperties = await new_bricksfi_backend.getAllProperties();
+        const fetchedProperties = await actor.getAllProperties();
         console.log("fetched data", fetchedProperties);
         setProperties(fetchedProperties);
       } catch (err) {
         setError(err.message);
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
     }
+
     fetchProperties();
-  }, []);
+  }, [actor]);
 
   useEffect(() => {
     async function fetchIcpPrice() {
@@ -86,6 +91,14 @@ function App() {
     );
   }
 
+  if (!actor) {
+    return (
+      <div style={{ textAlign: "center", marginTop: "20px" }}>
+        Connecting to canister...
+      </div>
+    );
+  }
+
   return (
     <>
       <Navbar />
@@ -112,151 +125,145 @@ function App() {
 
           <div style={gridStyle}>
             {properties.length > 0 ? (
-              properties.map((property) => (
-                <div key={property.id} style={cardStyle}>
-                  {property.imageUrls && property.imageUrls.length > 0 ? (
-                    <img
-                      src={property.imageUrls[0]}
-                      alt={`${property.name} main`}
-                      style={{
-                        width: "100%",
-                        height: "160px",
-                        objectFit: "cover",
-                        borderRadius: "8px 8px 0 0", // rounded corners on top only
-                        display: "block",
-                      }}
-                      onError={(e) => (e.target.style.display = "none")}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "160px",
-                        backgroundColor: "#333",
-                        borderRadius: "8px 8px 0 0",
-                      }}
-                    >
-                      No Image
-                    </div>
-                  )}
+              properties.map((property) => {
+                const ICPs = Number(property.totalPrice) / 100_000_000;
+                const usdValue = ICPs * icpPrice;
 
-                  {/* Description */}
-                  <div
-                    style={{
-                      padding: "16px",
-                      alignItems: "left",
-                      textAlign: "left",
-                    }}
-                  >
-                    {/* Property name centered */}
-                    <h2
-                      style={{
-                        fontSize: "18px",
-                        fontWeight: "600",
-                        marginBottom: "16px",
-                        color: "#FFFFFF",
-                      }}
-                    >
-                      {property.name}
-                    </h2>
+                const fundedICPs = Number(property.fundedAmount) / 100_000_000;
+                const fundedPercent =
+                  ICPs > 0 ? Math.round((fundedICPs / ICPs) * 100) : 0;
 
-                    {/* Details 2 per row, left aligned */}
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: "0.5px",
-                        fontSize: "14px",
-                        color: "#ccc",
-                        marginBottom: "12px",
-                      }}
-                    >
+                return (
+                  <div key={property.id} style={cardStyle}>
+                    {property.imageUrls && property.imageUrls.length > 0 ? (
+                      <img
+                        src={property.imageUrls[0]}
+                        alt={`${property.name} main`}
+                        style={{
+                          width: "100%",
+                          height: "160px",
+                          objectFit: "cover",
+                          borderRadius: "8px 8px 0 0",
+                          display: "block",
+                        }}
+                        onError={(e) => (e.target.style.display = "none")}
+                      />
+                    ) : (
                       <div
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
+                          width: "100%",
+                          height: "160px",
+                          backgroundColor: "#333",
+                          borderRadius: "8px 8px 0 0",
                         }}
                       >
+                        No Image
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    <div style={{ padding: "16px", textAlign: "left" }}>
+                      <h2
+                        style={{
+                          fontSize: "18px",
+                          fontWeight: "600",
+                          marginBottom: "16px",
+                          color: "#FFFFFF",
+                        }}
+                      >
+                        {property.name}
+                      </h2>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          fontSize: "14px",
+                          color: "#ccc",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        {/* Price display */}
                         <div
                           style={{
-                            color: "#5D3FD3",
-                            fontWeight: "700",
-                            fontSize: "18px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
                           }}
                         >
-                          {Number(property.totalPrice).toLocaleString()} ICP
-                        </div>{" "}
-                        |
-                        <div>
-                          <span
+                          <div
                             style={{
                               color: "#5D3FD3",
-                              fontWeight: "600",
-                              fontSize: "14px",
+                              fontWeight: "700",
+                              fontSize: "18px",
                             }}
                           >
-                            $ {icpPrice}
-                          </span>
-                          <span>
-                            {" "}
-                            <span></span>per token
-                          </span>
+                            {ICPs.toLocaleString()} ICP
+                          </div>
+                          |
+                          <div>
+                            <span
+                              style={{
+                                color: "#5D3FD3",
+                                fontWeight: "600",
+                                fontSize: "14px",
+                              }}
+                            >
+                              ${usdValue.toFixed(2)}
+                            </span>
+                            <span> total</span>
+                          </div>
+                        </div>
+                        <br />
+
+                        {/* Location + investors */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          <div>{property.location}</div> |{" "}
+                          <div>0 investors</div>
+                        </div>
+                        <br />
+
+                        {/* Yield + funded percentage */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          <div>{property.yieldPercentage}% Yield</div> |
+                          <div>{fundedPercent}% Funded</div>
                         </div>
                       </div>
-                      <br />
 
-                      <div
+                      {/* View Details button */}
+                      <Link
+                        to={`/property/${property.id}`}
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
+                          display: "block",
+                          backgroundColor: "#5D3FD3",
+                          fontSize: "14px",
+                          color: "white",
+                          padding: "10px 0",
+                          borderRadius: "8px",
+                          fontWeight: "500",
+                          textAlign: "center",
+                          textDecoration: "none",
+                          cursor: "pointer",
+                          width: "100%",
                         }}
                       >
-                        <div>{property.location}</div> |<div>11 investors</div>
-                      </div>
-                      <br />
-
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <div>{property.yieldPercentage}% Yield</div> |
-                        <div>
-                          {Math.round(
-                            (Number(property.fundedAmount) /
-                              Number(property.totalPrice)) *
-                              100
-                          ) || 0}
-                          % Funded
-                        </div>
-                      </div>
+                        View Details
+                      </Link>
                     </div>
-
-                    {/* View Details button */}
-                    <Link
-                      to={`/property/${property.id}`}
-                      style={{
-                        display: "block",
-                        backgroundColor: "#5D3FD3",
-                        fontSize: "14px",
-                        color: "white",
-                        padding: "10px 0",
-                        borderRadius: "8px",
-                        fontWeight: "500",
-                        textAlign: "center",
-                        textDecoration: "none",
-                        cursor: "pointer",
-                        width: "100%",
-                      }}
-                    >
-                      View Details
-                    </Link>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p style={{ color: "#777" }}>No properties found</p>
             )}
@@ -267,4 +274,4 @@ function App() {
   );
 }
 
-export default App;
+export default PropertiesList;

@@ -3,7 +3,9 @@ import { AuthClient } from "@dfinity/auth-client";
 // import { createActor } from "../declarations/new_bricksfi_backend";
 // import { canisterId } from "/declarations/new_bricksfi_backend/index.js";
 import { createActor } from "declarations/new_bricksfi_backend";
-import { canisterId } from "declarations/new_bricksfi_backend/index.js";
+// import { canisterId } from "declarations/new_bricksfi_backend/index.js";
+
+const backendCanisterId = process.env.CANISTER_ID_BRICKSFI_BACKEND;
 
 const network = process.env.DFX_NETWORK || "local";
 const identityProvider =
@@ -28,10 +30,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateActor = async (client = authClient) => {
-    if (!client) return;
+    if (!client || !backendCanisterId) return;
 
     const identity = client.getIdentity();
-    const newActor = createActor(canisterId, {
+    const newActor = createActor(backendCanisterId, {
       agentOptions: { identity },
     });
 
@@ -39,8 +41,7 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(await client.isAuthenticated());
 
     if (await client.isAuthenticated()) {
-      const principal = identity.getPrincipal().toString();
-      setPrincipal(principal);
+      setPrincipal(identity.getPrincipal().toString());
     } else {
       setPrincipal(null);
     }

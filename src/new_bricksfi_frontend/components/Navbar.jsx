@@ -17,117 +17,84 @@ const Navbar = () => {
     : null;
 
   return (
-    <div
-      style={{
-        padding: "20px",
-        fontFamily: "Albert Sans",
-        fontSize: "16px",
-        fontWeight: "500",
-        display: "flex",
-        alignItems: "center",
-        backgroundColor: "#111",
-        color: "white",
-        position: "relative",
-      }}
-    >
+    <div className="p-5 font-['Albert_Sans'] text-base font-medium flex items-center bg-gray-900 text-white relative">
       {/* Left: Logo */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+      <div className="flex-1 flex items-center">
         <Icon />
-        <span
-          style={{ marginLeft: "10px", fontSize: "24px", fontWeight: "500" }}
-        >
-          BricksFi
-        </span>
+        <span className="ml-2.5 text-2xl font-medium">BricksFi</span>
       </div>
 
       {/* Middle: Links (Desktop Only) */}
       {!isMobile && (
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            justifyContent: "center",
-            gap: "20px",
-            fontSize: "16px",
-          }}
-        >
-          <a style={linkStyle} href="/">
+        <div className="flex-1 flex justify-center gap-5 text-base">
+          <a className="text-white no-underline" href="/">
             Home
           </a>
-          <a style={linkStyle} href="/properties">
+          <a className="text-white no-underline" href="/properties">
             Properties
           </a>
         </div>
       )}
 
       {/* Right: Connect / Logout OR Mobile Menu */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          gap: "15px",
-        }}
-      >
+      <div className="flex-1 flex justify-end items-center gap-4">
         {!isMobile ? (
           isAuthenticated ? (
             <>
-              <span style={{ color: "#5D3FD3" }}>{truncatedPrincipal}</span>
-              <span style={connectBtnStyle} onClick={logout}>
+              <span className="text-purple-500">{truncatedPrincipal}</span>
+              <span
+                className="bg-purple-600 px-3 py-3 rounded-xl text-sm cursor-pointer text-center"
+                onClick={logout}
+              >
                 Logout
               </span>
             </>
           ) : (
-            <span style={connectBtnStyle} onClick={login}>
+            <span
+              className="bg-purple-600 px-3 py-3 rounded-xl text-sm cursor-pointer text-center"
+              onClick={login}
+            >
               Connect ICP
             </span>
           )
         ) : (
           <div
-            style={{ cursor: "pointer" }}
+            className="cursor-pointer"
             onClick={() => setMenuOpen(!menuOpen)}
           >
-            <div style={barStyle}></div>
-            <div style={barStyle}></div>
-            <div style={barStyle}></div>
+            <div className="w-6 h-0.5 bg-white my-1"></div>
+            <div className="w-6 h-0.5 bg-white my-1"></div>
+            <div className="w-6 h-0.5 bg-white my-1"></div>
           </div>
         )}
       </div>
 
       {/* Mobile Dropdown */}
       {isMobile && menuOpen && (
-        <div
-          style={{
-            position: "absolute",
-            top: "60px",
-            right: "20px",
-            backgroundColor: "#222",
-            padding: "15px",
-            borderRadius: "10px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "15px",
-            zIndex: 10,
-          }}
-        >
-          <a style={linkStyle} href="/">
+        <div className="absolute top-15 right-5 bg-gray-800 p-4 rounded-xl flex flex-col gap-4 z-10">
+          <a className="text-white no-underline" href="/">
             Home
           </a>
-          <a style={linkStyle} href="/properties">
+          <a className="text-white no-underline" href="/properties">
             Properties
           </a>
           {isAuthenticated ? (
             <>
-              <span style={{ color: "white", textAlign: "center" }}>
+              <span className="text-white text-center">
                 {truncatedPrincipal}
               </span>
-              <span style={connectBtnStyle} onClick={logout}>
+              <span
+                className="bg-purple-600 px-3 py-3 rounded-xl text-sm cursor-pointer text-center"
+                onClick={logout}
+              >
                 Logout
               </span>
             </>
           ) : (
-            <span style={connectBtnStyle} onClick={login}>
+            <span
+              className="bg-purple-600 px-3 py-3 rounded-xl text-sm cursor-pointer text-center"
+              onClick={login}
+            >
               Connect ICP
             </span>
           )}
@@ -138,28 +105,6 @@ const Navbar = () => {
 };
 
 export default Navbar;
-
-// Styles
-const linkStyle = {
-  color: "white",
-  textDecoration: "none",
-};
-
-const connectBtnStyle = {
-  backgroundColor: "#5D3FD3",
-  padding: "12px",
-  borderRadius: "10px",
-  fontSize: "14px",
-  cursor: "pointer",
-  textAlign: "center",
-};
-
-const barStyle = {
-  width: "25px",
-  height: "3px",
-  backgroundColor: "white",
-  margin: "4px 0",
-};
 
 function Icon() {
   return (

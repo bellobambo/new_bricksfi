@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
-import { new_bricksfi_backend } from "declarations/new_bricksfi_backend";
+import { useParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 
 const containerStyle = {
@@ -9,15 +9,12 @@ const containerStyle = {
   justifyContent: "space-between",
   backgroundColor: "#000",
   fontFamily: "Albert Sans",
-
-  // padding: "24px",
   color: "#fff",
   margin: "0 auto",
 };
 
 const detailsGridStyle = {
   display: "flex",
-
   gap: "12px",
   marginBottom: "16px",
 };
@@ -36,6 +33,7 @@ const detailBlockStyle = {
 
 export default function PropertyDetails() {
   const { id } = useParams();
+  const { actor } = useAuth();
   const [property, setProperty] = useState(null);
   const [investors, setInvestors] = useState([]);
   const [fundingPercentage, setFundingPercentage] = useState(0);
@@ -43,36 +41,97 @@ export default function PropertyDetails() {
   const [contentWidth, setContentWidth] = useState("100%");
   const [icpPrice, setIcpPrice] = useState(null);
   const [priceLoading, setPriceLoading] = useState(true);
+  const [investmentAmount, setInvestmentAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
   const imageRef = useRef(null);
 
   useEffect(() => {
-    async function fetchPropertyData() {
+    const fetchData = async () => {
+      if (!actor) return;
+
       try {
-        // Fetch property
-        const propertyData = await new_bricksfi_backend.getProperty(Number(id));
+        const percentage = await actor.getFundingPercentage(Number(id));
+        setFundingPercentage(percentage ? percentage.toFixed(2) : 0);
+
+        const investments = await actor.getPropertyInvestments(Number(id));
+        const uniqueInvestors = new Set(
+          investments.map((i) => i.investor.toString())
+        );
+        setUniqueInvestorsCount(uniqueInvestors.size);
+      } catch (err) {
+        console.error("Failed to fetch investment data:", err);
+      }
+    };
+
+    fetchData();
+  }, [actor, id]);
+
+  const handleBuyTokens = async () => {
+    if (!actor) {
+      setError("Not authenticated");
+      return;
+    }
+
+    if (!investmentAmount || parseFloat(investmentAmount) <= 0) {
+      setError("Please enter a valid amount");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const amountE8s = Math.floor(parseFloat(investmentAmount) * 100_000_000);
+      const result = await actor.investInProperty(Number(id), amountE8s);
+
+      if ("Ok" in result) {
+        alert(`Successfully invested! Transaction ID: ${result.Ok}`);
+        const percentage = await actor.getFundingPercentage(Number(id));
+        setFundingPercentage(percentage ? percentage.toFixed(2) : 0);
+
+        const investments = await actor.getPropertyInvestments(Number(id));
+        const uniqueInvestors = new Set(
+          investments.map((i) => i.investor.toString())
+        );
+        setUniqueInvestorsCount(uniqueInvestors.size);
+
+        setIsOpen(false);
+        setInvestmentAmount("");
+      } else if ("Err" in result) {
+        setError(`Investment failed: ${Object.keys(result.Err)[0]}`);
+      }
+    } catch (err) {
+      console.error("Investment error:", err);
+      setError(`Failed to invest: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!actor) return;
+
+    async function fetchPropertyData() {
+      setLoading(true);
+      try {
+        const propertyData = await actor.getProperty(Number(id));
         if (propertyData && propertyData.length > 0) {
           setProperty(propertyData[0]);
-
-          // Calculate funding percentage
-          const funded = Number(propertyData[0].fundedAmount);
-          const total = Number(propertyData[0].totalPrice);
-          const percentage =
-            total > 0 ? Math.min(100, (funded / total) * 100) : 0;
-          setFundingPercentage(percentage.toFixed(0));
-
-          // Fetch investment details
-          const investmentDetails =
-            await new_bricksfi_backend.getPropertyInvestmentDetails(Number(id));
-          setInvestors(investmentDetails.investments);
-          setUniqueInvestorsCount(investmentDetails.uniqueInvestors);
         }
+
+        console.log(propertyData, "Data");
       } catch (error) {
         console.error("Error fetching property data:", error);
+      } finally {
+        setLoading(false);
       }
     }
 
     fetchPropertyData();
-  }, [id]);
+  }, [id, actor]);
 
   useEffect(() => {
     const updateWidth = () => {
@@ -83,9 +142,8 @@ export default function PropertyDetails() {
 
     updateWidth();
     window.addEventListener("resize", updateWidth);
-
     return () => window.removeEventListener("resize", updateWidth);
-  }, [property]); // Re-run when property loads (image will be available)
+  }, [property]);
 
   useEffect(() => {
     async function fetchIcpPrice() {
@@ -94,18 +152,24 @@ export default function PropertyDetails() {
           "https://api.coingecko.com/api/v3/simple/price?ids=internet-computer&vs_currencies=usd"
         );
         const data = await response.json();
-        console.log("ICP PRICE", data);
         setIcpPrice(data["internet-computer"].usd);
       } catch (err) {
         console.error("Failed to fetch ICP price:", err);
-
-        setIcpPrice(10); // You can set a default value here
+        setIcpPrice(10); // fallback
       } finally {
         setPriceLoading(false);
       }
     }
     fetchIcpPrice();
   }, []);
+
+  if (!actor) {
+    return (
+      <p style={{ color: "#fff", padding: "20px" }}>
+        Connecting to canister...
+      </p>
+    );
+  }
 
   if (!property) {
     return <p style={{ color: "#fff", padding: "20px" }}>Loading...</p>;
@@ -116,7 +180,6 @@ export default function PropertyDetails() {
       <Navbar />
 
       <div style={{ padding: "30px" }}>
-        {/* Full-width image */}
         {property.imageUrls && property.imageUrls.length > 0 ? (
           <img
             ref={imageRef}
@@ -125,12 +188,12 @@ export default function PropertyDetails() {
             style={{
               width: "100vw",
               minWidth: "100%",
-              height: "50vh", // fill half the screen height dynamically
-              maxHeight: "500px", // prevent it from becoming too tall on large screens
+              height: "50vh",
+              maxHeight: "500px",
               objectFit: "cover",
               display: "block",
             }}
-            onError={(e) => (e.target.style.display = "none")}
+            onError={(e) => (e.currentTarget.style.display = "none")}
           />
         ) : (
           <div
@@ -149,460 +212,363 @@ export default function PropertyDetails() {
           </div>
         )}
 
-        {/* Rest of the property details */}
-        <div style={{ ...containerStyle, maxWidth: contentWidth }}>
-          <div style={{ width: "500px" }}>
-            <div
-              style={{
-                fontSize: "28px",
-                fontWeight: "600",
-                marginTop: "20px",
-                marginBottom: "10px",
-                color: "#fff",
-              }}
-            >
-              {property.name}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                marginBottom: "10px",
-              }}
-            >
-              <div>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: "20px",
+            marginTop: "30px",
+          }}
+        >
+          <div
+            style={{ flex: "1 1 400px", minWidth: "300px", maxWidth: "500px" }}
+          >
+            <div style={{ marginBottom: "24px" }}>
+              <h1
+                style={{
+                  fontSize: "28px",
+                  fontWeight: 600,
+                  marginBottom: "8px",
+                  color: "#fff",
+                }}
+              >
+                {property.name}
+              </h1>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "#bbb",
+                  fontSize: "16px",
+                }}
+              >
                 <Pointer />
-              </div>
-              <div style={{ fontSize: "16px", fontWeight: "500" }}>
-                {property.location}
+                <span>{property.location}</span>
               </div>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginBottom: "16px",
-                width: "600px",
-              }}
-            >
-              {/* Bedroom block */}
-              <div
+            <div style={{ marginBottom: "24px" }}>
+              <h3
                 style={{
-                  backgroundColor: "#181818",
-                  width: "180px",
-                  height: "100px",
-                  borderRadius: "8px",
-                  color: "#ccc",
-                  fontWeight: "600",
-                  display: "flex",
-                  alignItems: "center", // vertically center
-                  justifyContent: "flex-start", // align left horizontally
-                  gap: "18px",
-                  paddingLeft: "24px", // consistent padding left
-                  paddingRight: "12px",
-                  textAlign: "left",
-                  flex: 1,
+                  fontSize: "18px",
+                  fontWeight: 500,
+                  marginBottom: "12px",
+                  color: "#fff",
                 }}
               >
-                <span>
-                  <Bed />
-                </span>
-                <span
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                  }}
-                >
-                  <span style={{ fontSize: "14px" }}>Bedroom</span>
-                  <span style={{ fontSize: "18px", marginTop: "4px" }}>
-                    {Number(property.bedrooms)}
-                  </span>
-                </span>
-              </div>
-
-              {/* Bathrooms block */}
+                Property Features
+              </h3>
               <div
                 style={{
-                  backgroundColor: "#181818",
-                  width: "180px",
-                  height: "100px",
-                  borderRadius: "8px",
-                  color: "#ccc",
-                  fontWeight: "600",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: "18px",
-                  paddingLeft: "24px",
-                  paddingRight: "12px",
-                  textAlign: "left",
-                  flex: 1,
+                  flexWrap: "wrap",
+                  gap: "12px",
                 }}
               >
-                <span>
-                  <Bath />
-                </span>
-                <span
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                  }}
-                >
-                  <span style={{ fontSize: "14px" }}>Bathrooms</span>
-                  <span style={{ fontSize: "18px", marginTop: "4px" }}>
-                    {Number(property.bathrooms)}
-                  </span>
-                </span>
-              </div>
-
-              {/* Square Meters block */}
-              <div
-                style={{
-                  backgroundColor: "#181818",
-                  width: "180px",
-                  height: "100px",
-                  borderRadius: "8px",
-                  color: "#ccc",
-                  fontWeight: "600",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: "18px",
-                  paddingLeft: "24px",
-                  paddingRight: "12px",
-                  textAlign: "left",
-                  flex: 1,
-                }}
-              >
-                <span>
-                  <Square />
-                </span>
-                <span
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                  }}
-                >
-                  <span style={{ fontSize: "14px" }}>Square Meters</span>
-                  <span style={{ fontSize: "18px", marginTop: "4px" }}>
-                    {Number(property.squareMeters)}
-                  </span>
-                </span>
-              </div>
-            </div>
-
-            <span style={{ marginBottom: "10px" }}>Investment Summary</span>
-            <div></div>
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginTop: "10px",
-                marginBottom: "16px",
-                width: "600px",
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: "#181818",
-                  height: "100px",
-                  borderRadius: "8px",
-                  color: "#ccc",
-                  fontWeight: "600",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: "18px",
-                  paddingLeft: "24px",
-                  paddingRight: "12px",
-                  textAlign: "left",
-                  flex: 1, // <-- added to fill available space
-                  minWidth: 0, // <-- prevents overflow issues
-                }}
-              >
-                <span
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                  }}
-                >
-                  <small
+                {[
+                  {
+                    icon: <Bed />,
+                    label: "Bedrooms",
+                    value: Number(property.bedrooms),
+                  },
+                  {
+                    icon: <Bath />,
+                    label: "Bathrooms",
+                    value: Number(property.bathrooms),
+                  },
+                  {
+                    icon: <Square />,
+                    label: "Square Meters",
+                    value: Number(property.squareMeters),
+                  },
+                ].map((feature, i) => (
+                  <div
+                    key={i}
                     style={{
-                      fontSize: "16px",
-                      fontWeight: "500",
-                      marginBottom: "15px",
+                      flex: "1 1 100px",
+                      minWidth: "100px",
+                      backgroundColor: "#222",
+                      padding: "20px",
+                      borderRadius: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    {feature.icon}
+                    <div>
+                      <div style={{ fontSize: "14px", color: "#999" }}>
+                        {feature.label}
+                      </div>
+                      <div style={{ fontSize: "16px", marginTop: "4px" }}>
+                        {feature.value}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "24px" }}>
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: 500,
+                  marginBottom: "12px",
+                  color: "#fff",
+                }}
+              >
+                Investment Summary
+              </h3>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                <div
+                  style={{
+                    flex: "1 1 150px",
+                    minWidth: "150px",
+                    backgroundColor: "#222",
+                    padding: "12px",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#999",
+                      marginBottom: "8px",
                     }}
                   >
                     Property Value
-                  </small>
-                  <span style={{ fontSize: "14px" }}>
-                    {Number(property.totalPrice)} ICP
-                  </span>
-                  <span style={{ fontSize: "16px", marginTop: "5px" }}>
+                  </div>
+                  <div style={{ fontSize: "16px" }}>
+                    {(Number(property.totalPrice) / 100_000_000).toFixed(2)} ICP
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#5D3FD3",
+                      marginTop: "4px",
+                    }}
+                  >
                     $
                     {icpPrice
-                      ? (Number(property.totalPrice) * icpPrice).toFixed(2)
+                      ? (
+                          (Number(property.totalPrice) / 100_000_000) *
+                          icpPrice
+                        ).toFixed(2)
                       : "Loading..."}
-                  </span>
-                </span>
-              </div>
+                  </div>
+                </div>
 
-              <div
-                style={{
-                  backgroundColor: "#181818",
-                  height: "100px",
-                  borderRadius: "8px",
-                  color: "#ccc",
-                  fontWeight: "600",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: "18px",
-                  paddingLeft: "24px",
-                  paddingRight: "12px",
-                  textAlign: "left",
-                  flex: 1, // <-- added to fill available space
-                  minWidth: 0, // <-- prevents overflow issues
-                }}
-              >
-                <span
+                <div
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
+                    flex: "1 1 150px",
+                    minWidth: "150px",
+                    backgroundColor: "#222",
+                    padding: "12px",
+                    borderRadius: "8px",
                   }}
                 >
-                  <small
+                  <div
                     style={{
-                      fontSize: "16px",
-                      fontWeight: "500",
-                      marginBottom: "15px",
+                      fontSize: "14px",
+                      color: "#999",
+                      marginBottom: "8px",
                     }}
                   >
                     Price Per Token
-                  </small>
+                  </div>
+                  <div style={{ fontSize: "16px" }}>
+                    ${icpPrice || "Loading"}
+                  </div>
+                </div>
+              </div>
 
-                  <span style={{ fontSize: "16px", marginTop: "5px" }}>
-                    $ {icpPrice}
-                  </span>
-                </span>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                  marginTop: "12px",
+                }}
+              >
+                <div
+                  style={{
+                    flex: "1 1 150px",
+                    minWidth: "150px",
+                    backgroundColor: "#222",
+                    padding: "12px",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#999",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Investors
+                  </div>
+                  <div style={{ fontSize: "16px" }}>{uniqueInvestorsCount}</div>
+                </div>
+
+                <div
+                  style={{
+                    flex: "1 1 150px",
+                    minWidth: "150px",
+                    backgroundColor: "#222",
+                    padding: "12px",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#999",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Funding
+                  </div>
+                  <div style={{ fontSize: "16px" }}>{fundingPercentage}%</div>
+                  <div
+                    style={{
+                      height: "4px",
+                      background: "#333",
+                      borderRadius: "2px",
+                      marginTop: "8px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${fundingPercentage}%`,
+                        height: "100%",
+                        background: "#5D3FD3",
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  flex: "1 1 100%",
+                  backgroundColor: "#222",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  marginTop: "12px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "#999",
+                    marginBottom: "8px",
+                  }}
+                >
+                  Monthly Rental Yield
+                </div>
+                <div style={{ fontSize: "16px" }}>
+                  {property.yieldPercentage}%
+                </div>
               </div>
             </div>
 
             <div
               style={{
                 display: "flex",
+                flexDirection: "column",
+                flexWrap: "wrap",
                 gap: "12px",
-                marginTop: "10px",
-                marginBottom: "16px",
-                width: "600px",
+                marginBottom: "24px",
               }}
             >
-              {/* Bedroom block */}
-              <div
+              <button
                 style={{
-                  backgroundColor: "#181818",
-                  height: "100px",
+                  backgroundColor: "transparent",
+                  border: "1px solid #5D3FD3",
+                  color: "#5D3FD3",
+                  padding: "12px",
                   borderRadius: "8px",
-                  color: "#ccc",
-                  fontWeight: "600",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: "18px",
-                  paddingLeft: "24px",
-                  paddingRight: "12px",
-                  textAlign: "left",
-                  flex: 1, // <-- added to fill available space
-                  minWidth: 0, // <-- prevents overflow issues
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontSize: "16px",
                 }}
               >
-                <span
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                  }}
-                >
-                  <span style={{ fontSize: "14px" }}>No of Investors</span>
-                  <span style={{ fontSize: "18px", marginTop: "4px" }}>
-                    {uniqueInvestorsCount}
-                  </span>
-                </span>
-              </div>
+                Add to Wishlist
+              </button>
 
-              <div
+              <button
+                onClick={() => !property.fundingComplete && setIsOpen(true)}
                 style={{
-                  backgroundColor: "#181818",
-                  height: "100px",
+                  backgroundColor: property.fundingComplete
+                    ? "#333"
+                    : "#5D3FD3",
+                  color: "#fff",
+                  padding: "12px",
                   borderRadius: "8px",
-                  color: "#ccc",
-                  fontWeight: "600",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: "18px",
-                  paddingLeft: "24px",
-                  paddingRight: "12px",
-                  textAlign: "left",
-                  flex: 1, // <-- added to fill available space
-                  minWidth: 0,
+                  fontWeight: 600,
+                  border: "none",
+                  cursor: property.fundingComplete ? "default" : "pointer",
+                  fontSize: "16px",
                 }}
               >
-                <span
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                  }}
-                >
-                  <span style={{ fontSize: "14px" }}>Funding</span>
-                  <span style={{ fontSize: "18px", marginTop: "4px" }}>
-                    {fundingPercentage}%
-                  </span>
-                </span>
-              </div>
+                {property.fundingComplete ? "Fully Funded" : "Buy Token"}
+              </button>
             </div>
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginTop: "10px",
-                marginBottom: "16px",
-                width: "600px",
-              }}
-            >
-              {/* Bathrooms block */}
-              <div
-                style={{
-                  backgroundColor: "#181818",
-                  height: "100px",
-                  borderRadius: "8px",
-                  color: "#ccc",
-                  fontWeight: "600",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: "18px",
-                  paddingLeft: "24px",
-                  paddingRight: "12px",
-                  textAlign: "left",
-                  flex: 1 / 2,
-                }}
-              >
-                <span
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                  }}
-                >
-                  <span style={{ fontSize: "14px" }}>Monthly Rental Yield</span>
-                  <span style={{ fontSize: "18px", marginTop: "4px" }}>
-                    {Number(property.bathrooms)}
-                  </span>
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={() =>
-                alert(`Buying token for property ${property.name}`)
-              }
-              style={{
-                display: "block",
-                backgroundColor: "black",
-                border: "2px solid #1a1a1a",
-                color: "white",
-                padding: "14px 0",
-                borderRadius: "8px",
-                fontWeight: "600",
-                // width: "45%",
-                cursor: "pointer",
-                fontSize: "16px",
-                marginBottom: "15px",
-                width: "600px",
-              }}
-            >
-              Add to Wishist
-            </button>
-            <button
-              onClick={() =>
-                alert(`Buying token for property ${property.name}`)
-              }
-              style={{
-                display: "block",
-                backgroundColor: "#5D3FD3",
-                color: "white",
-                padding: "14px 0",
-                borderRadius: "8px",
-                fontWeight: "600",
-                // width: "45%",
-                width: "600px",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "16px",
-              }}
-            >
-              Buy Token
-            </button>
           </div>
 
-          <div style={{ width: "700px" }}>
+          <div
+            style={{ flex: "1 1 400px", minWidth: "300px", maxWidth: "700px" }}
+          >
             <div
               style={{
                 marginBottom: "24px",
                 background: "#181818",
                 padding: "20px",
-                borderRadius: "20px",
-                marginTop: "20px",
+                borderRadius: "12px",
               }}
             >
               <h3
                 style={{
-                  marginBottom: "16px",
                   fontSize: "20px",
-                  fontWeight: "600",
+                  fontWeight: 600,
+                  color: "#fff",
+                  marginBottom: "16px",
                 }}
               >
-                Gallery{" "}
+                Gallery
               </h3>
-              {property.imageUrls && property.imageUrls.length > 0 ? (
+              {property.imageUrls?.length > 0 ? (
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))",
                     gap: "16px",
-                    width: "100%",
                   }}
                 >
-                  {property.imageUrls.map((url, index) => (
+                  {property.imageUrls.map((url, i) => (
                     <div
-                      key={index}
+                      key={i}
                       style={{
                         width: "100%",
-                        height: "150px",
+                        aspectRatio: "1",
                         overflow: "hidden",
                         borderRadius: "8px",
                       }}
                     >
                       <img
                         src={url}
-                        alt={`${property.name} image ${index + 1}`}
+                        alt={`${property.name} ${i + 1}`}
                         style={{
                           width: "100%",
                           height: "100%",
                           objectFit: "cover",
-                          display: "block",
                         }}
-                        onError={(e) => (e.target.style.display = "none")}
                       />
                     </div>
                   ))}
@@ -611,12 +577,12 @@ export default function PropertyDetails() {
                 <div
                   style={{
                     width: "100%",
-                    height: "350px",
-                    backgroundColor: "#333",
+                    height: "200px",
+                    backgroundColor: "#222",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    color: "#999",
+                    color: "#666",
                     borderRadius: "8px",
                   }}
                 >
@@ -624,22 +590,213 @@ export default function PropertyDetails() {
                 </div>
               )}
             </div>
-            <p
+
+            <div
               style={{
-                backgroundColor: "#222",
-                padding: "16px",
+                backgroundColor: "#181818",
+                padding: "20px",
                 borderRadius: "12px",
-                color: "#bbb",
-                fontWeight: "500",
-                fontSize: "16px",
-                marginBottom: "24px",
-                lineHeight: "1.5",
+                color: "#ddd",
+                lineHeight: 1.6,
               }}
             >
-              {property.description}
-            </p>
+              <h3
+                style={{
+                  fontSize: "16px",
+                  fontWeight: 500,
+                  color: "#fff",
+                  marginBottom: "12px",
+                }}
+              >
+                About Property
+              </h3>
+              <p
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 400,
+                  color: "#fff",
+                  marginBottom: "12px",
+                }}
+              >
+                {property.description}
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* Investment Modal */}
+        {isOpen && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              padding: "20px",
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: "#222",
+                borderRadius: "12px",
+                padding: "24px",
+                width: "100%",
+                maxWidth: "400px",
+                boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+              }}
+            >
+              <h2
+                style={{
+                  marginBottom: "8px",
+                  fontSize: "20px",
+                  fontWeight: "600",
+                  color: "#fff",
+                }}
+              >
+                Invest in {property.name}
+              </h2>
+
+              <p
+                style={{
+                  color: "#999",
+                  marginBottom: "24px",
+                  fontSize: "14px",
+                }}
+              >
+                Enter the amount of ICP you want to invest
+              </p>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    color: "#bbb",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                  }}
+                >
+                  ICP Amount
+                </label>
+                <input
+                  type="number"
+                  value={investmentAmount}
+                  onChange={(e) => setInvestmentAmount(e.target.value)}
+                  placeholder="0.00"
+                  style={{
+                    width: "90%",
+                    padding: "12px",
+                    backgroundColor: "#333",
+                    border: "1px solid #444",
+                    borderRadius: "8px",
+                    color: "#fff",
+                    fontSize: "16px",
+                    outline: "none",
+                    ":focus": {
+                      borderColor: "#5D3FD3",
+                    },
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: "24px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    color: "#bbb",
+                    marginBottom: "8px",
+                    fontSize: "14px",
+                  }}
+                >
+                  Estimated Value (USD)
+                </label>
+                <input
+                  type="text"
+                  value={
+                    investmentAmount && icpPrice
+                      ? `$${(parseFloat(investmentAmount) * icpPrice).toFixed(
+                          2
+                        )}`
+                      : "$0.00"
+                  }
+                  disabled
+                  style={{
+                    width: "90%",
+                    padding: "12px",
+                    backgroundColor: "#2a2a2a",
+                    border: "1px solid #333",
+                    borderRadius: "8px",
+                    color: "#aaa",
+                    fontSize: "16px",
+                    cursor: "not-allowed",
+                  }}
+                />
+              </div>
+
+              {error && (
+                <div
+                  style={{
+                    color: "#ff6b6b",
+                    fontSize: "14px",
+                    marginBottom: "16px",
+                    textAlign: "center",
+                  }}
+                >
+                  {error}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  disabled={isLoading}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    backgroundColor: "transparent",
+                    border: "1px solid #5D3FD3",
+                    color: "#5D3FD3",
+                    borderRadius: "8px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    ":hover": {
+                      backgroundColor: "rgba(93, 63, 211, 0.1)",
+                    },
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleBuyTokens}
+                  disabled={isLoading || !investmentAmount}
+                  style={{
+                    flex: 1,
+                    padding: "12px",
+                    backgroundColor: "#5D3FD3",
+                    border: "none",
+                    color: "white",
+                    borderRadius: "8px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    ":hover": {
+                      backgroundColor: "#4a2dab",
+                    },
+                  }}
+                >
+                  {isLoading ? "Processing..." : "Confirm"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
@@ -657,16 +814,16 @@ function Pointer() {
       <path
         d="M17.3347 16.5002C18.1734 17.7542 18.5273 18.5196 18.2303 19.1585C18.1936 19.2367 18.1508 19.3122 18.1019 19.3849C17.5749 20.1668 16.2136 20.1668 13.4911 20.1668H8.50994C5.78744 20.1668 4.42711 20.1668 3.90003 19.3849C3.85194 19.3126 3.80905 19.2369 3.77169 19.1585C3.47469 18.5196 3.82853 17.7542 4.66636 16.5002M13.7505 8.7085C13.7505 9.43784 13.4608 10.1373 12.9451 10.653C12.4293 11.1688 11.7299 11.4585 11.0005 11.4585C10.2712 11.4585 9.57171 11.1688 9.05598 10.653C8.54026 10.1373 8.25053 9.43784 8.25053 8.7085C8.25053 7.97915 8.54026 7.27968 9.05598 6.76395C9.57171 6.24823 10.2712 5.9585 11.0005 5.9585C11.7299 5.9585 12.4293 6.24823 12.9451 6.76395C13.4608 7.27968 13.7505 7.97915 13.7505 8.7085Z"
         stroke="#D5D5D5"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M11 1.8335C14.7208 1.8335 17.875 4.97583 17.875 8.78825C17.875 12.6612 14.6694 15.3791 11.7086 17.2271C11.493 17.3511 11.2487 17.4164 11 17.4164C10.7513 17.4164 10.507 17.3511 10.2914 17.2271C7.33608 15.3607 4.125 12.6749 4.125 8.78825C4.125 4.97583 7.27925 1.8335 11 1.8335Z"
         stroke="#D5D5D5"
-        stroke-width="1.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -684,16 +841,16 @@ function Bed() {
       <path
         d="M21 15.5H1M21 19V14C21 12.114 21 11.172 20.414 10.586C19.828 10 18.886 10 17 10M17 10H5M17 10V8.213C17 7.833 16.943 7.705 16.65 7.555C16.04 7.243 15.299 7 14.5 7C13.701 7 12.96 7.243 12.35 7.555C12.057 7.705 12 7.833 12 8.213V10M5 10C3.114 10 2.172 10 1.586 10.586C1 11.172 1 12.114 1 14V19M5 10V8.213C5 7.833 5.057 7.705 5.35 7.555C5.96 7.243 6.701 7 7.5 7C8.299 7 9.04 7.243 9.65 7.555C9.943 7.705 10 7.833 10 8.213V10"
         stroke="white"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
         d="M20 10V5.36C20 4.669 20 4.323 19.808 3.997C19.616 3.671 19.342 3.501 18.794 3.163C16.587 1.8 13.9 1 11 1C8.1 1 5.413 1.8 3.206 3.163C2.658 3.501 2.384 3.67 2.192 3.997C2 4.324 2 4.669 2 5.36V10"
         stroke="white"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -711,9 +868,9 @@ function Bath() {
       <path
         d="M5 18L4 19M17 18L18 19M2 10V11C2 14.3 2 15.95 3.025 16.975C4.05 18 5.7 18 9 18H13C16.3 18 17.95 18 18.975 16.975C20 15.95 20 14.3 20 11V10M1 10H21M3 10V3.52301C2.99965 2.91619 3.21801 2.32958 3.61506 1.8707C4.01211 1.41181 4.56125 1.1114 5.16181 1.02453C5.76237 0.937658 6.37413 1.07015 6.88494 1.39771C7.39575 1.72528 7.77139 2.22597 7.943 2.80801L8 3.00001M7 4.00001L9.5 2.00001"
         stroke="white"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -728,27 +885,27 @@ function Square() {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <g clip-path="url(#clip0_1665_34677)">
+      <g clipPath="url(#clip0_1665_34677)">
         <path
           d="M11.4794 20.2069L4.49164 13.2192C3.7007 12.4282 3.7007 10.972 4.49164 10.181L11.4794 3.1933C12.2703 2.40237 13.7266 2.40237 14.5175 3.1933L21.5052 10.181C22.2962 10.972 22.2962 12.4282 21.5052 13.2192L14.5175 20.2069C13.7266 20.9978 12.2703 20.9978 11.4794 20.2069V20.2069Z"
           stroke="white"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
         <path
           d="M2.60156 17.123L8.27439 22.7959"
           stroke="white"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
         <path
           d="M17.7266 22.7959L23.3994 17.123"
           stroke="white"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </g>
       <defs>
