@@ -98,3 +98,26 @@ dfx ledger account-id
 bd29fc3ef91413dbd3fbb2f632f84d3c30e576f4d7e43ef2c49958c24afee436
 
 wallet canister id: uxrrr-q7777-77774-qaaaq-cai
+
+<!-- Backend Status  -->
+
+Canister status call result for bricksfi_backend.
+Status: Running
+Controllers: 6yhvo-xuihb-at5pm-6r4mj-zviub-isbdm-ltiku-qwcpf-fwd2u-ldpnl-mqe uqqxf-5h777-77774-qaaaa-cai
+Memory allocation: 0 Bytes
+Compute allocation: 0 %
+Freezing threshold: 2_592_000 Seconds
+Idle cycles burned per day: 63_245_708 Cycles
+Memory Size: 6_188_900 Bytes
+Balance: 399_300_101_391_348 Cycles
+Reserved: 0 Cycles
+Reserved cycles limit: 5_000_000_000_000 Cycles
+Wasm memory limit: 3_221_225_472 Bytes
+Wasm memory threshold: 0 Bytes
+Module hash: 0xa8039db5d756a3901fd1cb71fa12a2d5a749469a6800f2b32ddedfeec18a080a
+Number of queries: 416
+Instructions spent in queries: 46_842_900
+Total query request payload size: 4_940 Bytes
+Total query response payload size: 711_451 Bytes
+Log visibility: controllers
+user@Bambo new_bricksfi %

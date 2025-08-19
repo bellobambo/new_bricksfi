@@ -58,6 +58,7 @@ actor class BricksFi(owner : Principal) = this {
   private stable var nextInvestmentId : Nat = 1;
   private stable var properties : [Property] = [];
   private stable var investments : [Investment] = [];
+  private stable var wishlists : [(Principal, Nat)] = [];
 
   // Auth Helpers --------------------------------------------------------------
   private func isOwner(caller : Principal) : Bool {
@@ -260,6 +261,66 @@ actor class BricksFi(owner : Principal) = this {
     } catch (e) {
       #err("Caught exception: " # Error.message(e));
     };
+  };
+
+  // Wishlist Functions --------------------------------------------------------
+  public shared (msg) func addToWishlist(propertyId : Nat) : async Result.Result<(), Error> {
+    // Check property exists
+    switch (Array.find(properties, func(p : Property) : Bool { p.id == propertyId })) {
+      case null { return #err(#NotFound) };
+      case (?_) {
+        // Prevent duplicate entry
+        let alreadyExists = Array.find(
+          wishlists,
+          func(entry : (Principal, Nat)) : Bool {
+            entry.0 == msg.caller and entry.1 == propertyId
+          },
+        );
+
+        if (alreadyExists != null) {
+          return #ok(()); // Already in wishlist, no need to add again
+        };
+
+        wishlists := Array.append(wishlists, [(msg.caller, propertyId)]);
+        return #ok(());
+      };
+    };
+  };
+
+  public shared (msg) func removeFromWishlist(propertyId : Nat) : async Result.Result<(), Error> {
+    let filtered = Array.filter(
+      wishlists,
+      func(entry : (Principal, Nat)) : Bool {
+        not (entry.0 == msg.caller and entry.1 == propertyId);
+      },
+    );
+
+    if (filtered.size() == wishlists.size()) {
+      return #err(#NotFound); // nothing removed
+    };
+
+    wishlists := filtered;
+    #ok(());
+  };
+
+  public shared query (msg) func getMyWishlist() : async [Property] {
+    let ids = Array.filter<(Principal, Nat)>(
+      wishlists,
+      func(entry) { entry.0 == msg.caller },
+    );
+
+    // Collect properties manually (skip nulls)
+    var results : [Property] = [];
+    for (entry in ids.vals()) {
+      switch (Array.find(properties, func(p : Property) : Bool { p.id == entry.1 })) {
+        case (?prop) {
+          results := Array.append(results, [prop]);
+        };
+        case null {};
+      };
+    };
+
+    results;
   };
 
   // Query Functions -----------------------------------------------------------

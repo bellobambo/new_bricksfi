@@ -30,15 +30,15 @@ const Dashboard = () => {
 
   return (
     <div className="flex h-screen bg-black text-white">
-      {/* Sidebar */}
-      <aside className="w-64 bg-black border-r border-[#2E2E2E] hidden md:flex flex-col">
+      {/* Sidebar - Fixed to extend full height */}
+      <aside className="w-64 bg-black border-r border-[#2E2E2E] hidden md:flex flex-col fixed left-0 top-0 bottom-0">
         <div className="h-16 flex items-center justify-center font-bold text-xl border-b border-[#2E2E2E]">
           <div className="flex items-center">
             <Icon />
             <span className="ml-2.5 text-[20px] font-medium">BricksFi</span>
           </div>
         </div>
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 p-4 overflow-y-auto">
           <p className="text-sm text-gray-400 mb-4">Menu</p>
           <ul className="space-y-4">
             <li>
@@ -54,7 +54,6 @@ const Dashboard = () => {
                 Dashboard
               </Link>
             </li>
-
             <li>
               <Link
                 to="/properties"
@@ -68,62 +67,103 @@ const Dashboard = () => {
                 Browse Properties
               </Link>
             </li>
+            <li>
+              <Link
+                to="/wishlist"
+                className={`block items-center px-3 py-2 rounded-lg h-[48px] text-[16px] cursor-pointer font-[500] transition
+        ${
+          isActive("/properties")
+            ? "bg-[#5D3FD3] text-white"
+            : "text-gray-300 hover:bg-[#2E2E2E]"
+        }`}
+              >
+                Wishlist
+              </Link>
+            </li>
           </ul>
         </nav>
       </aside>
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col">
+      {/* Main content area - Adjusted for fixed sidebar */}
+      <div className="flex-1 flex flex-col md:ml-64">
         {/* Navbar */}
         <header className="h-16 bg-black flex items-center justify-between px-6">
           <span className="text-lg font-semibold">Dashboard</span>
         </header>
 
         {/* Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 overflow-y-auto">
+          {/* Rest of your content remains the same */}
           {/* Top section */}
           <div className="flex justify-between items-center my-4">
             <span className="text-lg font-[500]">Asset Overview</span>
-            <button className="px-4 py-2 bg-[#5D3FD3] rounded-lg text-white text-[14px] cursor-pointer font-medium hover:bg-[#4c2fb8] transition">
+            <button className="px-4 py-2 bg-[#5D3FD3] rounded-lg text-white text-[14px] cursor-disallowed font-medium hover:bg-[#4c2fb8] transition ">
               Withdraw
             </button>
           </div>
 
           {/* Stats cards */}
-          <div className="flex gap-x-6 w-full mb-10">
-            {[
-              { label: "Current Rent Balance", value: "₦120,000" },
-              { label: "Properties Owned", value: "12" },
-              { label: "Total Earnings", value: "₦450,000" },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="bg-[#181818] p-6 rounded-xl flex-1 h-[150px] flex flex-col justify-between shadow-md"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="bg-[#2E2E2E] p-3 rounded-lg flex items-center justify-center">
-                    <House className="w-6 h-6 text-white" />
-                  </div>
-                  <p className="text-gray-300 text-sm font-medium">
-                    {item.label}
-                  </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full mb-10">
+            {/* Current Rent Balance (Static) */}
+            <div className="bg-[#181818] p-6 rounded-xl h-[150px] flex flex-col justify-between shadow-md">
+              <div className="flex items-center space-x-3">
+                <div className="bg-[#2E2E2E] p-3 rounded-lg flex items-center justify-center">
+                  <House className="w-6 h-6 text-white" />
                 </div>
-                <div className="text-3xl font-bold tracking-wide mt-4">
-                  {item.value}
-                </div>
+                <p className="text-gray-300 text-[16px] font-medium">
+                  Current Rent Balance
+                </p>
               </div>
-            ))}
+              <div className="text-[24px] font-[600] tracking-wide mt-4">
+                ₦0
+              </div>
+            </div>
+
+            {/* Properties Owned (Dynamic) */}
+            <div className="bg-[#181818] p-6 rounded-xl h-[150px] flex flex-col justify-between shadow-md">
+              <div className="flex items-center space-x-3">
+                <div className="bg-[#2E2E2E] p-3 rounded-lg flex items-center justify-center">
+                  <House className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-gray-300 text-[16px] font-medium">
+                  Properties Owned
+                </p>
+              </div>
+              <div className="text-[24px] font-[600] tracking-wide mt-4">
+                {myProperties.length}
+              </div>
+            </div>
+
+            {/* Total Earnings (Static) */}
+            <div className="bg-[#181818] p-6 rounded-xl h-[150px] flex flex-col justify-between shadow-md">
+              <div className="flex items-center space-x-3">
+                <div className="bg-[#2E2E2E] p-3 rounded-lg flex items-center justify-center">
+                  <House className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-gray-300 text-[16px] font-medium">
+                  Total Earnings
+                </p>
+              </div>
+              <div className="text-[24px] font-[600] tracking-wide mt-4">
+                ₦0
+              </div>
+            </div>
           </div>
 
           {/* My Properties */}
-          <h2 className="text-xl font-semibold mb-4">My Properties</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-[500]">
+              My Properties
+              <span className="ml-1">({myProperties.length})</span>
+            </h2>
+          </div>
 
           {loading ? (
             <p className="text-gray-400">Loading...</p>
           ) : error ? (
             <p className="text-red-500">{error}</p>
           ) : myProperties.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-6">
               {myProperties.map((property) => {
                 const ICPs = Number(property.totalPrice) / 100_000_000;
                 const usdValue = ICPs * 6.2; // TODO: replace with live ICP price
@@ -134,54 +174,65 @@ const Dashboard = () => {
                 return (
                   <div
                     key={property.id}
-                    className="bg-[#181818] rounded-xl overflow-hidden shadow-md"
+                    className="bg-[#181818] rounded-xl overflow-hidden shadow-md flex flex-col h-[400px]"
                   >
+                    {/* Property Image - Slightly smaller increase */}
                     {property.imageUrls?.length > 0 ? (
                       <img
                         src={property.imageUrls[0]}
                         alt={property.name}
-                        className="w-full h-40 object-cover"
+                        className="w-full h-52 object-cover"
                         onError={(e) => (e.target.style.display = "none")}
                       />
                     ) : (
-                      <div className="w-full h-40 bg-[#333] flex items-center justify-center text-gray-500">
+                      <div className="w-full h-52 bg-[#333] flex items-center justify-center text-gray-500">
                         No Image
                       </div>
                     )}
 
-                    <div className="p-4 text-left">
-                      <h3 className="text-lg font-semibold mb-2">
+                    {/* Property Details with slightly adjusted spacing */}
+                    <div className="p-4 flex flex-col flex-1">
+                      {/* Property Name */}
+                      <h3 className="text-lg font-semibold mb-3">
                         {property.name}
                       </h3>
 
-                      {/* Price */}
-                      <div className="flex items-center gap-2 text-sm text-gray-300 mb-2">
-                        <span className="text-[#5D3FD3] font-bold text-base">
-                          {ICPs.toLocaleString()} ICP
-                        </span>
-                        |
-                        <span className="text-[#5D3FD3] font-semibold">
-                          ${usdValue.toFixed(2)}
-                        </span>
-                        <span>total</span>
+                      {/* Details Container */}
+                      <div className="flex-1 flex flex-wrap justify-between gap-4 mb-3">
+                        {/* Tokens */}
+                        <div className="flex flex-col min-w-[100px]">
+                          <span className="text-[#A1A1A1] font-[400] text-[16px] mb-1">
+                            Tokens
+                          </span>
+                          <span className="text-white font-[500] text-[18px] text-base">
+                            {ICPs.toLocaleString()} ICP
+                          </span>
+                        </div>
+
+                        {/* Cash Payout */}
+                        <div className="flex flex-col min-w-[100px]">
+                          <span className="text-[#A1A1A1] font-[400] text-[16px] mb-1">
+                            Cash Payout
+                          </span>
+                          <span className="text-white font-[500] text-[18px] text-base">
+                            ${usdValue.toFixed(2)}
+                          </span>
+                        </div>
+
+                        {/* Current Value */}
+                        <div className="flex flex-col min-w-[100px]">
+                          <span className="text-[#A1A1A1] font-[400] text-[16px] mb-1">
+                            Current Value
+                          </span>
+                          <span className="text-white font-[500] text-[18px] text-base">
+                            {property.yieldPercentage}% Yield
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Location + investors */}
-                      <div className="flex items-center gap-2 text-gray-400 text-sm mb-2">
-                        <span>{property.location}</span> |{" "}
-                        <span>0 investors</span>
-                      </div>
-
-                      {/* Yield + funded */}
-                      <div className="flex items-center gap-2 text-gray-400 text-sm mb-4">
-                        <span>{property.yieldPercentage}% Yield</span> |{" "}
-                        <span>{fundedPercent}% Funded</span>
-                      </div>
-
-                      {/* Button */}
                       <Link
                         to={`/property/${property.id}`}
-                        className="block w-full bg-[#5D3FD3] text-center text-white text-sm font-medium py-2 rounded-lg hover:bg-[#4c2fb8] transition"
+                        className="mt-auto bg-[#5D3FD3] text-center text-white text-sm font-medium py-2 rounded-lg hover:bg-[#4c2fb8] transition"
                       >
                         View Details
                       </Link>
