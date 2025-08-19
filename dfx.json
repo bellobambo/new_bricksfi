@@ -41,8 +41,8 @@
   },
   "defaults": {
     "build": {
-      "args": "",
-      "packtool": ""
+      "packtool": "cat mops.sources",
+      "args": ""
     }
   },
   "output_env_file": ".env",

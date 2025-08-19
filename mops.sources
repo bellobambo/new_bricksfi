@@ -1,0 +1,4 @@
+--package base .mops/base@0.15.1/src
+--package hash .mops/hash@1.0.0/src
+--package base-0.7.3 .mops/_github/base-0.7.3#aafcdee0c8328087aeed506e64aa2ff4ed329b47/src
+--package array .mops/_github/array#v0.2.1/src

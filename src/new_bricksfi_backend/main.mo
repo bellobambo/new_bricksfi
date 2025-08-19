@@ -1,5 +1,6 @@
 import Array "mo:base/Array";
 import Nat "mo:base/Nat";
+import Nat32 "mo:base/Nat32";
 import Nat64 "mo:base/Nat64";
 import Nat8 "mo:base/Nat8";
 import Text "mo:base/Text";
@@ -11,6 +12,7 @@ import Error "mo:base/Error";
 import Blob "mo:base/Blob";
 import Ledger "canister:icp_ledger_canister";
 import Debug "mo:base/Debug";
+import CRC32 "mo:hash/CRC32";
 
 actor class BricksFi(owner : Principal) = this {
   // Types ---------------------------------------------------------------------
@@ -194,25 +196,63 @@ actor class BricksFi(owner : Principal) = this {
     };
   };
 
+  // Correct principal to account identifier conversion
+
+  private func principalToAccount(p : Principal) : Blob {
+    let principalBlob = Principal.toBlob(p);
+    let hash = Blob.toArray(principalBlob);
+
+    // Calculate CRC32 checksum - using Nat32 explicitly
+    let crc : Nat32 = CRC32.checksum(hash);
+
+    // Create account identifier bytes (CRC32 + hash)
+    let crcBytes = [
+      Nat8.fromNat(Nat32.toNat((crc >> 24) & 0xff)),
+      Nat8.fromNat(Nat32.toNat((crc >> 16) & 0xff)),
+      Nat8.fromNat(Nat32.toNat((crc >> 8) & 0xff)),
+      Nat8.fromNat(Nat32.toNat(crc & 0xff)),
+    ];
+
+    // Combine and pad to 32 bytes
+    let accountIdentifier = Array.tabulate<Nat8>(
+      32,
+      func(i) {
+        if (i < 4) {
+          crcBytes[i];
+        } else if (i - 4 < hash.size()) {
+          hash[i - 4];
+        } else {
+          0 // padding
+        };
+      },
+    );
+
+    Blob.fromArray(accountIdentifier);
+  };
+
   // ICP Transfer Functions ----------------------------------------------------
+
   private func transferICP(
     from : Principal,
     to : Principal,
     amount : Nat,
   ) : async Result.Result<Nat, Text> {
     try {
+      // Explicit type conversions for ledger compatibility
       let transferArgs : Ledger.TransferArgs = {
         memo = 0 : Nat64;
         amount = { e8s = Nat64.fromNat(amount) };
         fee = { e8s = Nat64.fromNat(FEE) };
         from_subaccount = null;
         to = principalToAccount(to);
-        created_at_time = null;
+        created_at_time = ?{ timestamp_nanos = Nat64.fromIntWrap(Time.now()) }; // Added timestamp
       };
 
       let transferResult = await Ledger.transfer(transferArgs);
       switch (transferResult) {
-        case (#Ok(blockIndex)) { #ok(Nat64.toNat(blockIndex)) };
+        case (#Ok(blockIndex)) {
+          #ok(Nat64.toNat(blockIndex));
+        };
         case (#Err(transferError)) {
           #err("Transfer error: " # debug_show (transferError));
         };
@@ -220,24 +260,6 @@ actor class BricksFi(owner : Principal) = this {
     } catch (e) {
       #err("Caught exception: " # Error.message(e));
     };
-  };
-
-  // Simplified principal to account identifier conversion
-  private func principalToAccount(principal : Principal) : Ledger.AccountIdentifier {
-    let account = Blob.toArray(Principal.toBlob(principal));
-    let size = account.size();
-    var sum = 0;
-
-    for (i in account.keys()) {
-      sum += Nat8.toNat(account[i]); // Convert Nat8 to Nat for safe addition
-    };
-
-    let crc = sum % 65536; // Simple checksum (for demo purposes)
-    let crcBytes = [
-      Nat8.fromNat(crc / 256),
-      Nat8.fromNat(crc % 256),
-    ];
-    Blob.fromArray(Array.append(crcBytes, account));
   };
 
   // Query Functions -----------------------------------------------------------

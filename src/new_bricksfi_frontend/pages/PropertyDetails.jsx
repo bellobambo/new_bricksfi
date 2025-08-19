@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
+import toast from "react-hot-toast";
 
 const containerStyle = {
   minHeight: "100vh",
@@ -71,24 +72,24 @@ export default function PropertyDetails() {
 
   const handleBuyTokens = async () => {
     if (!actor) {
-      setError("Not authenticated");
+      toast.error("Not authenticated. Please connect your wallet.");
       return;
     }
 
     if (!investmentAmount || parseFloat(investmentAmount) <= 0) {
-      setError("Please enter a valid amount");
+      toast.error("Please enter a valid amount");
       return;
     }
 
     setIsLoading(true);
-    setError(null);
 
     try {
       const amountE8s = Math.floor(parseFloat(investmentAmount) * 100_000_000);
       const result = await actor.investInProperty(Number(id), amountE8s);
 
       if ("Ok" in result) {
-        alert(`Successfully invested! Transaction ID: ${result.Ok}`);
+        toast.success(`Successfully invested! Transaction ID: ${result.Ok}`);
+
         const percentage = await actor.getFundingPercentage(Number(id));
         setFundingPercentage(percentage ? percentage.toFixed(2) : 0);
 
@@ -101,11 +102,34 @@ export default function PropertyDetails() {
         setIsOpen(false);
         setInvestmentAmount("");
       } else if ("Err" in result) {
-        setError(`Investment failed: ${Object.keys(result.Err)[0]}`);
+        const errorType = Object.keys(result.Err)[0];
+        let errorMessage = "Investment failed";
+
+        // Customize error messages based on the error type
+        switch (errorType) {
+          case "NotFound":
+            errorMessage = "Property not found";
+            break;
+          case "Unauthorized":
+            errorMessage = "You are not authorized";
+            break;
+          case "AlreadyFunded":
+            errorMessage = "This property is already fully funded";
+            break;
+          case "InvalidAmount":
+            errorMessage = "The amount is too small (must cover fees)";
+            break;
+          case "TransferFailed":
+            errorMessage = "ICP transfer failed";
+            break;
+        }
+
+        toast.error(errorMessage);
       }
     } catch (err) {
       console.error("Investment error:", err);
-      setError(`Failed to invest: ${err.message}`);
+      toast.error(`Please Try again later!`);
+      toast.error(`Unable to invest at the moment`);
     } finally {
       setIsLoading(false);
     }
@@ -738,31 +762,19 @@ export default function PropertyDetails() {
                 />
               </div>
 
-              {error && (
-                <div
-                  style={{
-                    color: "#ff6b6b",
-                    fontSize: "14px",
-                    marginBottom: "16px",
-                    textAlign: "center",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
-
               <div style={{ display: "flex", gap: "12px" }}>
                 <button
                   onClick={() => setIsOpen(false)}
                   disabled={isLoading}
                   style={{
                     flex: 1,
-                    padding: "12px",
+                    padding: "8px",
                     backgroundColor: "transparent",
                     border: "1px solid #5D3FD3",
                     color: "#5D3FD3",
                     borderRadius: "8px",
-                    fontWeight: "600",
+                    fontSize: "14px",
+                    fontWeight: "400",
                     cursor: "pointer",
                     transition: "all 0.2s",
                     ":hover": {
@@ -778,12 +790,13 @@ export default function PropertyDetails() {
                   disabled={isLoading || !investmentAmount}
                   style={{
                     flex: 1,
-                    padding: "12px",
+                    padding: "8px",
                     backgroundColor: "#5D3FD3",
                     border: "none",
                     color: "white",
                     borderRadius: "8px",
-                    fontWeight: "600",
+                    fontSize: "14px",
+                    fontWeight: "400",
                     cursor: "pointer",
                     transition: "all 0.2s",
                     ":hover": {
