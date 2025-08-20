@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
+import toast from "react-hot-toast";
 
 const containerStyle = {
   minHeight: "100vh",
@@ -47,6 +48,8 @@ export default function PropertyDetails() {
   const [error, setError] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const imageRef = useRef(null);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,7 +57,9 @@ export default function PropertyDetails() {
 
       try {
         const percentage = await actor.getFundingPercentage(Number(id));
-        setFundingPercentage(percentage ? percentage.toFixed(2) : 0);
+        // Convert BigInt to number before using toFixed
+        const percentageNumber = Number(percentage) || 0;
+        setFundingPercentage(percentageNumber.toFixed(2));
 
         const investments = await actor.getPropertyInvestments(Number(id));
         const uniqueInvestors = new Set(
@@ -71,24 +76,24 @@ export default function PropertyDetails() {
 
   const handleBuyTokens = async () => {
     if (!actor) {
-      setError("Not authenticated");
+      toast.error("Not authenticated. Please connect your wallet.");
       return;
     }
 
     if (!investmentAmount || parseFloat(investmentAmount) <= 0) {
-      setError("Please enter a valid amount");
+      toast.error("Please enter a valid amount");
       return;
     }
 
     setIsLoading(true);
-    setError(null);
 
     try {
       const amountE8s = Math.floor(parseFloat(investmentAmount) * 100_000_000);
       const result = await actor.investInProperty(Number(id), amountE8s);
 
       if ("Ok" in result) {
-        alert(`Successfully invested! Transaction ID: ${result.Ok}`);
+        toast.success(`Successfully invested! Transaction ID: ${result.Ok}`);
+
         const percentage = await actor.getFundingPercentage(Number(id));
         setFundingPercentage(percentage ? percentage.toFixed(2) : 0);
 
@@ -101,37 +106,128 @@ export default function PropertyDetails() {
         setIsOpen(false);
         setInvestmentAmount("");
       } else if ("Err" in result) {
-        setError(`Investment failed: ${Object.keys(result.Err)[0]}`);
+        const errorType = Object.keys(result.Err)[0];
+        let errorMessage = "Investment failed";
+
+        // Customize error messages based on the error type
+        switch (errorType) {
+          case "NotFound":
+            errorMessage = "Property not found";
+            break;
+          case "Unauthorized":
+            errorMessage = "You are not authorized";
+            break;
+          case "AlreadyFunded":
+            errorMessage = "This property is already fully funded";
+            break;
+          case "InvalidAmount":
+            errorMessage = "The amount is too small (must cover fees)";
+            break;
+          case "TransferFailed":
+            errorMessage = "ICP transfer failed";
+            break;
+        }
+
+        toast.error(errorMessage);
       }
     } catch (err) {
       console.error("Investment error:", err);
-      setError(`Failed to invest: ${err.message}`);
+      toast.error(`Please Try again later!`);
+      toast.error(`Unable to invest at the moment`);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!actor) return;
+    const fetchProperty = async () => {
+      if (actor && id) {
+        setLoading(true);
+        try {
+          console.log("Fetching property with ID:", id);
+          const result = await actor.getProperty(Number(id));
 
-    async function fetchPropertyData() {
-      setLoading(true);
-      try {
-        const propertyData = await actor.getProperty(Number(id));
-        if (propertyData && propertyData.length > 0) {
-          setProperty(propertyData[0]);
+          console.log("RAW RESULT:", result);
+          console.log("Result type:", typeof result);
+
+          // Debug: Check what keys exist in the result
+          if (result && typeof result === "object") {
+            console.log("Result keys:", Object.keys(result));
+          }
+
+          // Handle different possible response structures
+          if (result && "ok" in result) {
+            if (Array.isArray(result.ok) && result.ok.length > 0) {
+              setProperty(result.ok[0]);
+            } else if (typeof result.ok === "object" && result.ok !== null) {
+              // Handle case where ok is the property object directly
+              setProperty(result.ok);
+            } else {
+              toast.error("Property not found");
+              setProperty(null);
+            }
+          } else if (result && "err" in result) {
+            console.error("Error from canister:", result.err);
+            toast.error(
+              "Failed to fetch property: " + JSON.stringify(result.err)
+            );
+            setProperty(null);
+          } else if (Array.isArray(result) && result.length > 0) {
+            // Handle case where response is directly an array
+            setProperty(result[0]);
+          } else {
+            console.error("Unexpected response format:", result);
+            toast.error("Unexpected response format from canister");
+            setProperty(null);
+          }
+        } catch (err) {
+          console.error("Fetch error:", err);
+          toast.error("Failed to fetch property details");
+          setProperty(null);
+        } finally {
+          setLoading(false);
         }
-
-        console.log(propertyData, "Data");
-      } catch (error) {
-        console.error("Error fetching property data:", error);
-      } finally {
-        setLoading(false);
       }
+    };
+
+    fetchProperty();
+  }, [actor, id]);
+
+  const handleToggleWishlist = async () => {
+    if (!actor) {
+      toast.error("Not authenticated. Please connect your wallet.");
+      return;
     }
 
-    fetchPropertyData();
-  }, [id, actor]);
+    setWishlistLoading(true);
+
+    try {
+      if (isWishlisted) {
+        // 🔹 Remove from wishlist
+        const result = await actor.removeFromWishlist(Number(id));
+        if ("ok" in result) {
+          setIsWishlisted(false);
+          toast.success("Removed from wishlist");
+        } else {
+          toast.error("Failed to remove from wishlist");
+        }
+      } else {
+        // 🔹 Add to wishlist
+        const result = await actor.addToWishlist(Number(id));
+        if ("ok" in result) {
+          setIsWishlisted(true);
+          toast.success("Added to wishlist");
+        } else {
+          toast.error("Failed to add to wishlist");
+        }
+      }
+    } catch (err) {
+      console.error("Wishlist toggle error:", err);
+      toast.error("Something went wrong. Try again later.");
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
 
   useEffect(() => {
     const updateWidth = () => {
@@ -488,18 +584,24 @@ export default function PropertyDetails() {
               }}
             >
               <button
+                onClick={handleToggleWishlist}
+                disabled={wishlistLoading}
                 style={{
-                  backgroundColor: "transparent",
+                  backgroundColor: isWishlisted ? "#5D3FD3" : "transparent",
                   border: "1px solid #5D3FD3",
-                  color: "#5D3FD3",
+                  color: isWishlisted ? "#fff" : "#5D3FD3",
                   padding: "12px",
                   borderRadius: "8px",
                   fontWeight: 600,
-                  cursor: "pointer",
+                  cursor: wishlistLoading ? "not-allowed" : "pointer",
                   fontSize: "16px",
                 }}
               >
-                Add to Wishlist
+                {wishlistLoading
+                  ? "Processing..."
+                  : isWishlisted
+                  ? "Remove from Wishlist"
+                  : "Add to Wishlist"}
               </button>
 
               <button
@@ -738,31 +840,19 @@ export default function PropertyDetails() {
                 />
               </div>
 
-              {error && (
-                <div
-                  style={{
-                    color: "#ff6b6b",
-                    fontSize: "14px",
-                    marginBottom: "16px",
-                    textAlign: "center",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
-
               <div style={{ display: "flex", gap: "12px" }}>
                 <button
                   onClick={() => setIsOpen(false)}
                   disabled={isLoading}
                   style={{
                     flex: 1,
-                    padding: "12px",
+                    padding: "8px",
                     backgroundColor: "transparent",
                     border: "1px solid #5D3FD3",
                     color: "#5D3FD3",
                     borderRadius: "8px",
-                    fontWeight: "600",
+                    fontSize: "14px",
+                    fontWeight: "400",
                     cursor: "pointer",
                     transition: "all 0.2s",
                     ":hover": {
@@ -778,12 +868,13 @@ export default function PropertyDetails() {
                   disabled={isLoading || !investmentAmount}
                   style={{
                     flex: 1,
-                    padding: "12px",
+                    padding: "8px",
                     backgroundColor: "#5D3FD3",
                     border: "none",
                     color: "white",
                     borderRadius: "8px",
-                    fontWeight: "600",
+                    fontSize: "14px",
+                    fontWeight: "400",
                     cursor: "pointer",
                     transition: "all 0.2s",
                     ":hover": {

@@ -33,6 +33,9 @@ const Navbar = () => {
           <a className="text-white no-underline" href="/properties">
             Properties
           </a>
+          <a className="text-white no-underline" href="/dashboard">
+            Dashboard
+          </a>
         </div>
       )}
 
@@ -77,6 +80,9 @@ const Navbar = () => {
           </a>
           <a className="text-white no-underline" href="/properties">
             Properties
+          </a>
+          <a className="text-white no-underline" href="/dashboard">
+            Dashboard
           </a>
           {isAuthenticated ? (
             <>
