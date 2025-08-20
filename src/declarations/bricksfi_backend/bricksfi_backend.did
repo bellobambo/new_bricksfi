@@ -1,0 +1,67 @@
+type Result_1 = 
+ variant {
+   err: Error;
+   ok;
+ };
+type Result = 
+ variant {
+   err: Error;
+   ok: nat;
+ };
+type Property = 
+ record {
+   bathrooms: nat;
+   bedrooms: nat;
+   createdAt: int;
+   creator: principal;
+   description: text;
+   fundedAmount: nat;
+   fundingComplete: bool;
+   id: nat;
+   imageUrls: vec text;
+   location: text;
+   name: text;
+   squareMeters: nat;
+   totalPrice: nat;
+   yieldPercentage: float64;
+ };
+type Investment = 
+ record {
+   amount: nat;
+   id: nat;
+   investor: principal;
+   propertyId: nat;
+   timestamp: int;
+ };
+type Error = 
+ variant {
+   AlreadyFunded;
+   InvalidAmount;
+   NotFound;
+   TransferFailed: text;
+   Unauthorized;
+ };
+type BricksFi = 
+ service {
+   addToWishlist: (propertyId: nat) -> (Result_1);
+   createProperty: (name: text, description: text, bedrooms: nat, bathrooms:
+    nat, squareMeters: nat, imageUrls: vec text, location: text, totalPrice:
+    nat, yieldPercentage: float64) -> (Result);
+   deleteProperty: (id: nat) -> (Result_1);
+   getAllProperties: () -> (vec Property) query;
+   getCanisterAccount: () -> (blob) query;
+   getCreatedProperties: () -> (vec Property) query;
+   getFundingPercentage: (propertyId: nat) -> (opt float64) query;
+   getMyInvestments: () -> (vec Investment) query;
+   getMyWishlist: () -> (vec Property) query;
+   getPrincipal: () -> (principal) query;
+   getProperty: (id: nat) -> (opt Property) query;
+   getPropertyCount: () -> (nat) query;
+   getPropertyInvestments: (propertyId: nat) -> (vec Investment) query;
+   investInProperty: (propertyId: nat, amount: nat) -> (Result);
+   removeFromWishlist: (propertyId: nat) -> (Result_1);
+   updateProperty: (id: nat, name: text, description: text, imageUrls:
+    vec text) -> (Result_1);
+   withdrawFunds: (amount: nat, to: principal) -> (Result);
+ };
+service : (owner: principal) -> BricksFi
