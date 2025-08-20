@@ -13,6 +13,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # Install DFINITY SDK (dfx)
+      - name: Install DFINITY SDK
+        run: |
+          DFX_VERSION=0.24.3
+          sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
+          echo "$HOME/bin" >> $GITHUB_PATH
+          dfx --version
+
+      # Install mops
       - uses: ZenVoich/setup-mops@v1
         with:
           mops-version: 1
