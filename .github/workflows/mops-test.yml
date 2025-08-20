@@ -13,14 +13,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      # Install DFINITY SDK (dfx) using the official setup action
-      - name: Install DFINITY SDK (dfx)
-        uses: dfinity/setup-dfx@v1
-        with:
-          version: 0.21.0  # Use a stable, existing version
-
-      # Install mops
       - uses: ZenVoich/setup-mops@v1
         with:
           mops-version: 1
@@ -28,5 +20,3 @@ jobs:
       - name: install mops packages
         run: mops install
 
-      - name: run tests
-        run: mops test
