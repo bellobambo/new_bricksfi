@@ -14,11 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Install DFINITY SDK (dfx)
+      # Install DFINITY SDK (dfx) non-interactively
       - name: Install DFINITY SDK
         run: |
           DFX_VERSION=0.24.3
-          sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
+          wget https://github.com/dfinity/sdk/releases/download/dfx-$DFX_VERSION/dfx-$DFX_VERSION-x86_64-linux.tar.gz
+          tar xzf dfx-$DFX_VERSION-x86_64-linux.tar.gz
+          mkdir -p $HOME/bin
+          mv dfx $HOME/bin/
           echo "$HOME/bin" >> $GITHUB_PATH
           dfx --version
 
