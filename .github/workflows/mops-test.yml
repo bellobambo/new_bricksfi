@@ -14,16 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Install DFINITY SDK (dfx) non-interactively
+      # Install DFINITY SDK (dfx) using the official setup action
       - name: Install DFINITY SDK (dfx)
-        run: |
-          DFX_VERSION=0.28.0
-          wget https://github.com/dfinity/sdk/releases/download/dfx-$DFX_VERSION/dfx-$DFX_VERSION-x86_64-linux.tar.gz
-          tar xzf dfx-$DFX_VERSION-x86_64-linux.tar.gz
-          mkdir -p $HOME/bin
-          mv dfx $HOME/bin/
-          echo "$HOME/bin" >> $GITHUB_PATH
-          dfx --version
+        uses: dfinity/setup-dfx@v1
+        with:
+          version: 0.21.0  # Use a stable, existing version
 
       # Install mops
       - uses: ZenVoich/setup-mops@v1
