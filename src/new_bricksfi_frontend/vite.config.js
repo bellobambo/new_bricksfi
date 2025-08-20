@@ -20,6 +20,7 @@ export default defineConfig({
       ],
       output: {
         globals: {
+          global: "globalThis",
           "@dfinity/agent": "dfinityAgent",
           "@dfinity/auth-client": "dfinityAuthClient",
           "@dfinity/identity": "dfinityIdentity",
