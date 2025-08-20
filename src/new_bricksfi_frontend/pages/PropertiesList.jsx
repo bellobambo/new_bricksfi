@@ -60,7 +60,16 @@ function PropertiesList() {
   return (
     <>
       <Navbar />
-      <Toaster position="top-right" /> {/* toast container */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: "#363636",
+            color: "#fff",
+            fontSize: "16px",
+          },
+        }}
+      />
       <main
         style={{
           minHeight: "100vh",
