@@ -38,17 +38,6 @@ export default defineConfig({
     tailwindcss(),
     environment("all", { prefix: "CANISTER_" }),
     environment("all", { prefix: "DFX_" }),
-    {
-      name: "spa-fallback",
-      configureServer(server) {
-        server.middlewares.use(
-          history({
-            disableDotRule: true,
-            htmlAcceptHeaders: ["text/html", "application/xhtml+xml"],
-          })
-        );
-      },
-    },
   ],
   resolve: {
     alias: [
