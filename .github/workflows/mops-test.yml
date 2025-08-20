@@ -15,9 +15,9 @@ jobs:
       - uses: actions/checkout@v4
 
       # Install DFINITY SDK (dfx) non-interactively
-      - name: Install DFINITY SDK
+      - name: Install DFINITY SDK (dfx)
         run: |
-          DFX_VERSION=0.24.3
+          DFX_VERSION=0.28.0
           wget https://github.com/dfinity/sdk/releases/download/dfx-$DFX_VERSION/dfx-$DFX_VERSION-x86_64-linux.tar.gz
           tar xzf dfx-$DFX_VERSION-x86_64-linux.tar.gz
           mkdir -p $HOME/bin
