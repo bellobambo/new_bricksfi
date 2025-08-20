@@ -1,4 +1,6 @@
 {
+  "version": 1,
+  "profile": "Release",
   "canisters": {
     "bricksfi_backend": {
       "main": "src/new_bricksfi_backend/main.mo",
@@ -27,7 +29,6 @@
         }
       }
     },
-
     "internet_identity": {
       "type": "custom",
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
@@ -45,6 +46,5 @@
       "args": ""
     }
   },
-  "output_env_file": ".env",
-  "version": 1
+  "output_env_file": ".env"
 }
