@@ -4,6 +4,7 @@ import { defineConfig } from "vite";
 import environment from "vite-plugin-environment";
 import tailwindcss from "@tailwindcss/vite";
 import dotenv from "dotenv";
+import history from "connect-history-api-fallback"; // 👈 for SPA fallback
 
 dotenv.config({ path: "../../.env" });
 
@@ -24,23 +25,30 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Add this catch-all proxy for client-side routing
-      "^/(?!.*\\.[^\\/]+$).*$": {
-        target: "http://127.0.0.1:4943",
-        changeOrigin: true,
-        rewrite: (path) => "/index.html",
-      },
       "/api": {
         target: "http://127.0.0.1:4943",
         changeOrigin: true,
       },
     },
+    // React Router SPA fallback
+    middlewareMode: true,
   },
   plugins: [
     react(),
     tailwindcss(),
     environment("all", { prefix: "CANISTER_" }),
     environment("all", { prefix: "DFX_" }),
+    {
+      name: "spa-fallback",
+      configureServer(server) {
+        server.middlewares.use(
+          history({
+            disableDotRule: true,
+            htmlAcceptHeaders: ["text/html", "application/xhtml+xml"],
+          })
+        );
+      },
+    },
   ],
   resolve: {
     alias: [
