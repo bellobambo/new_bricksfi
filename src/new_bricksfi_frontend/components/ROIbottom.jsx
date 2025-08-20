@@ -14,7 +14,10 @@ const ROIbottom = () => {
 
       {/* Join Waitlist Button */}
       <div className="pt-4 px-4 sm:px-0">
-        <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-medium sm:font-semibold text-base sm:text-lg transition-colors duration-300 flex items-center gap-2 sm:gap-3 mx-auto">
+        <button
+          className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-medium sm:font-semibold text-base sm:text-lg transition-colors duration-300 flex items-center gap-2 sm:gap-3 mx-auto cursor-not-allowed"
+          disabled
+        >
           Join Waitlist
           <svg
             className="w-4 h-4 sm:w-5 sm:h-5"

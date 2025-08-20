@@ -203,7 +203,6 @@ export default function PropertyDetails() {
 
     try {
       if (isWishlisted) {
-        // 🔹 Remove from wishlist
         const result = await actor.removeFromWishlist(Number(id));
         if ("ok" in result) {
           setIsWishlisted(false);
@@ -268,7 +267,12 @@ export default function PropertyDetails() {
   }
 
   if (!property) {
-    return <p style={{ color: "#fff", padding: "20px" }}>Loading...</p>;
+    return (
+      <div className="flex flex-col items-center justify-center mt-20">
+        <div className="w-12 h-12 border-4 border-t-purple-600 border-b-purple-600 border-gray-300 rounded-full animate-spin"></div>
+        <p className="mt-4 text-white text-lg">Loading properties...</p>
+      </div>
+    );
   }
 
   return (
@@ -282,8 +286,8 @@ export default function PropertyDetails() {
             src={property.imageUrls[0]}
             alt={`${property.name} main`}
             style={{
-              width: "100vw",
-              minWidth: "100%",
+              width: "80vw",
+              minWidth: "90%",
               height: "50vh",
               maxHeight: "500px",
               objectFit: "cover",

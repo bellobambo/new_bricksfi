@@ -30,8 +30,6 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-    // React Router SPA fallback
-    middlewareMode: true,
   },
   plugins: [
     react(),

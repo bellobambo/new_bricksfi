@@ -70,7 +70,7 @@ const CardsRender = () => {
 
               {/* Read More Link */}
               <button className="text-purple-400 hover:text-purple-300 font-medium flex items-center text-[18px] gap-2 transition-colors cursor-pointer">
-                <p>Read more</p>
+                {/* <p>Read more</p>
                 <svg
                   className="w-4 h-4"
                   fill="none"
@@ -83,7 +83,7 @@ const CardsRender = () => {
                     strokeWidth={2}
                     d="M9 5l7 7-7 7"
                   />
-                </svg>
+                </svg> */}
               </button>
             </div>
           ))}
