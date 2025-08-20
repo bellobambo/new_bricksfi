@@ -10,23 +10,6 @@ dotenv.config({ path: "../../.env" });
 export default defineConfig({
   build: {
     emptyOutDir: true,
-    rollupOptions: {
-      external: [
-        "@dfinity/agent",
-        "@dfinity/auth-client",
-        "@dfinity/identity",
-        "@dfinity/principal",
-        "@dfinity/candid",
-      ],
-      output: {
-        globals: {
-          global: "globalThis",
-          "@dfinity/agent": "dfinityAgent",
-          "@dfinity/auth-client": "dfinityAuthClient",
-          "@dfinity/identity": "dfinityIdentity",
-        },
-      },
-    },
     commonjsOptions: {
       transformMixedEsModules: true,
     },
@@ -38,7 +21,6 @@ export default defineConfig({
         global: "globalThis",
       },
     },
-    exclude: ["@dfinity/agent", "@dfinity/auth-client", "@dfinity/identity"],
   },
   server: {
     proxy: {
