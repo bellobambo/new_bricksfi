@@ -24,7 +24,7 @@ const ROI = () => {
             className=" cursor-not-allowed bg-purple-600 hover:bg-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-colors duration-300 flex items-center gap-3 mx-auto"
             disabled
           >
-            Start Investing from $100
+            Start Investing from $30
             <svg
               className="w-5 h-5"
               fill="none"

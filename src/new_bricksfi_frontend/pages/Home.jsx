@@ -34,10 +34,10 @@ const Home = () => {
             style={{
               lineHeight: "1.3",
               fontWeight: "600",
-              fontSize: "2.3rem", // responsive
+              fontSize: "2.3rem",
             }}
           >
-            Reinventing Africa’s Property
+            Reinventing Property
             <br />
             Market with Fractional
             <br />
@@ -55,9 +55,9 @@ const Home = () => {
               marginTop: "1rem",
             }}
           >
-            Bricks lets you invest in tokenized real estate properties across
-            Africa through secure, on-chain ownership powered by the Internet
-            Computer Protocol (ICP).
+            Bricks lets you invest in tokenized real estate assets through
+            secure, on-chain ownership powered by the Internet Computer Protocol
+            (ICP).
           </span>
 
           <br />
