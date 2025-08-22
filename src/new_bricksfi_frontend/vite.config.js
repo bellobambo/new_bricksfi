@@ -4,7 +4,6 @@ import { defineConfig } from "vite";
 import environment from "vite-plugin-environment";
 import tailwindcss from "@tailwindcss/vite";
 import dotenv from "dotenv";
-import history from "connect-history-api-fallback"; // 👈 for SPA fallback
 
 dotenv.config({ path: "../../.env" });
 

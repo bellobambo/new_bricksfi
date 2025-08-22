@@ -18,15 +18,8 @@
       "type": "custom",
       "candid": "https://raw.githubusercontent.com/dfinity/ic/047925dfd8386aca91d154054149727131766084/rs/ledger_suite/icp/ledger.did",
       "wasm": "https://download.dfinity.systems/ic/047925dfd8386aca91d154054149727131766084/canisters/ledger-canister.wasm.gz",
-      "remote": {
-        "id": {
-          "ic": "ryjl3-tyaaa-aaaaa-aaaba-cai"
-        }
-      },
       "local": {
-        "id": {
-          "local": "ryjl3-tyaaa-aaaaa-aaaba-cai"
-        }
+        "id": "ryjl3-tyaaa-aaaaa-aaaba-cai"
       }
     },
     "internet_identity": {

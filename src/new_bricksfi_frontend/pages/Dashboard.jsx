@@ -18,6 +18,7 @@ const Dashboard = () => {
       try {
         const fetchedProperties = await actor.getCreatedProperties();
         setMyProperties(fetchedProperties);
+        console.log("My Properties", fetchedProperties);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -264,14 +265,14 @@ function House() {
       <path
         d="M7 21L7.002 16.998C7.002 16.067 7.002 15.602 7.155 15.235C7.25551 14.9922 7.4029 14.7716 7.58872 14.5857C7.77455 14.3999 7.99518 14.2525 8.238 14.152C8.605 14 9.07 14 10 14C10.93 14 11.396 14 11.764 14.152C12.0068 14.2525 12.2274 14.3999 12.4133 14.5857C12.5991 14.7716 12.7465 14.9922 12.847 15.235C13 15.603 13 16.068 13 17V21"
         stroke="#E0E0E0"
-        stroke-width="1.5"
+        strokeWidth="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
       <path
         d="M5.088 3.762L4.088 4.543C2.572 5.727 1.813 6.319 1.407 7.153C1 7.988 1 8.952 1 10.88V12.972C1 16.756 1 18.648 2.172 19.824C3.344 21 5.229 21 9 21H11C14.771 21 16.657 21 17.828 19.824C18.999 18.648 19 16.756 19 12.971V10.881C19 8.952 19 7.988 18.593 7.153C18.186 6.319 17.428 5.727 15.912 4.543L14.912 3.763C12.552 1.92 11.372 1 10 1C8.628 1 7.448 1.92 5.088 3.762Z"
         stroke="#E0E0E0"
-        stroke-width="1.5"
+        strokeWidth="1.5"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
