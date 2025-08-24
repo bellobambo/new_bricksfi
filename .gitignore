@@ -2,26 +2,57 @@
 .vscode/
 .idea/
 **/*~
+*.swp
+*.swo
 
 # Mac OSX temporary files
 .DS_Store
 **/.DS_Store
 
-# dfx temporary files
+# dfx temporary files and build artifacts
 .dfx/
+**/*.wasm
+**/*.wasm.gz
+**/*.o
+**/*.a
 
 # generated files
 # **/declarations/
+declarations/
 
 # rust
 target/
+Cargo.lock
 
 # frontend code
 node_modules/
 dist/
+build/
 .svelte-kit/
+.cache/
+*.log
 
 # environment variables
 .env
+.env.local
+.env.production
 
-.mops
+# Package managers
+.mops/
+.vessel/
+package-lock.json
+yarn.lock
+
+# Build outputs
+*.tar.gz
+*.zip
+
+# Large data files
+*.csv
+*.jsonl
+*.avro
+*.parquet
+
+# Temporary files
+tmp/
+temp/
