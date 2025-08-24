@@ -1,8 +1,8 @@
 import React from "react";
-import { Link } from "react-router-dom";
+
 import Navbar from "../components/Navbar";
 import House from "../components/House";
-import FeaturedProperties from "../components/FeaturedProperties";
+
 import HowIsWorks from "../components/HowIsWorks";
 import CardsRender from "../components/CardsRender";
 import ROI from "../components/ROI";
@@ -61,7 +61,7 @@ const Home = () => {
           </span>
 
           <br />
-          <Link
+          <a
             style={{
               backgroundColor: "#5D3FD3",
               padding: "12px 20px",
@@ -73,10 +73,10 @@ const Home = () => {
               display: "inline-block",
               marginTop: "1.5rem",
             }}
-            to="/properties"
+            href="/properties"
           >
             Explore Properties
-          </Link>
+          </a>
         </div>
 
         <div
@@ -91,7 +91,6 @@ const Home = () => {
         </div>
       </div>
 
-      <FeaturedProperties />
       <HowIsWorks />
       <CardsRender />
       <ROI />

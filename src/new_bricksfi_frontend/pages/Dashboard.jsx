@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const Dashboard = () => {
@@ -42,8 +42,8 @@ const Dashboard = () => {
           <p className="text-sm text-gray-400 mb-4">Menu</p>
           <ul className="space-y-4">
             <li>
-              <Link
-                to="/dashboard"
+              <a
+                href="/dashboard"
                 className={`block px-3 py-2 rounded-lg h-[48px] text-[16px] cursor-pointer font-[500] transition
         ${
           isActive("/dashboard")
@@ -52,11 +52,11 @@ const Dashboard = () => {
         }`}
               >
                 Dashboard
-              </Link>
+              </a>
             </li>
             <li>
-              <Link
-                to="/properties"
+              <a
+                href="/properties"
                 className={`block items-center px-3 py-2 rounded-lg h-[48px] text-[16px] cursor-pointer font-[500] transition
         ${
           isActive("/properties")
@@ -65,11 +65,11 @@ const Dashboard = () => {
         }`}
               >
                 Browse Properties
-              </Link>
+              </a>
             </li>
             <li>
-              <Link
-                to="/wishlist"
+              <a
+                href="/wishlist"
                 className={`block items-center px-3 py-2 rounded-lg h-[48px] text-[16px] cursor-pointer font-[500] transition
         ${
           isActive("/properties")
@@ -78,7 +78,7 @@ const Dashboard = () => {
         }`}
               >
                 Wishlist
-              </Link>
+              </a>
             </li>
           </ul>
         </nav>
@@ -230,12 +230,12 @@ const Dashboard = () => {
                         </div>
                       </div>
 
-                      <Link
-                        to={`/property/${property.id}`}
+                      <a
+                        href={`/property/${property.id}`}
                         className="mt-auto bg-[#5D3FD3] text-center text-white text-sm font-medium py-2 rounded-lg hover:bg-[#4c2fb8] transition"
                       >
                         View Details
-                      </Link>
+                      </a>
                     </div>
                   </div>
                 );

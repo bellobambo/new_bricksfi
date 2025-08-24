@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import toast, { Toaster } from "react-hot-toast";
@@ -174,8 +173,8 @@ function PropertiesList() {
                         </div>
                         <div>{fundedPercent}% Funded</div>
                       </div>
-                      <Link
-                        to={`/property/${property.id}`}
+                      <a
+                        href={`/property/${property.id}`}
                         style={{
                           display: "block",
                           backgroundColor: "#5D3FD3",
@@ -189,7 +188,7 @@ function PropertiesList() {
                         }}
                       >
                         View Details
-                      </Link>
+                      </a>
                     </div>
                   </div>
                 );

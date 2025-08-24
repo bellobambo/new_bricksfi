@@ -6,12 +6,15 @@ import { createActor } from "declarations/new_bricksfi_backend";
 // import { canisterId } from "declarations/new_bricksfi_backend/index.js";
 
 const backendCanisterId = process.env.CANISTER_ID_BRICKSFI_BACKEND;
+// const frontendCanisterId = process.env.CANISTER_ID_INTERNET_IDENTITY;
+
+const frontendCanisterId = "umunu-kh777-77774-qaaca-cai";
 
 const network = process.env.DFX_NETWORK || "local";
 const identityProvider =
   network === "ic"
     ? "https://identity.ic0.app"
-    : `http://${process.env.CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`;
+    : `http://${frontendCanisterId}.localhost:4943`;
 
 const AuthContext = createContext();
 

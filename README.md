@@ -99,6 +99,13 @@ bd29fc3ef91413dbd3fbb2f632f84d3c30e576f4d7e43ef2c49958c24afee436
 
 wallet canister id: uxrrr-q7777-77774-qaaaq-cai
 
+mainnet:
+dfx identity use mainnet-user
+dfx deploy --network local
+
+local:
+dfx identity use default
+
 <!-- Backend Status  -->
 
 Canister status call result for bricksfi_backend.

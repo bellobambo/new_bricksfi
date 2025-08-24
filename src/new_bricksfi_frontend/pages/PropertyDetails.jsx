@@ -4,34 +4,6 @@ import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import toast from "react-hot-toast";
 
-const containerStyle = {
-  minHeight: "100vh",
-  display: "flex",
-  justifyContent: "space-between",
-  backgroundColor: "#000",
-  fontFamily: "Albert Sans",
-  color: "#fff",
-  margin: "0 auto",
-};
-
-const detailsGridStyle = {
-  display: "flex",
-  gap: "12px",
-  marginBottom: "16px",
-};
-
-const detailBlockStyle = {
-  backgroundColor: "#181818",
-  width: "200px",
-  height: "90px",
-  alignItems: "center",
-  padding: "12px",
-  borderRadius: "8px",
-  color: "#ccc",
-  fontWeight: "600",
-  textAlign: "center",
-};
-
 export default function PropertyDetails() {
   const { id } = useParams();
   const { actor } = useAuth();
